@@ -1,105 +1,99 @@
-/*
-	@file AE.c
-	@brief Implementação de um algoritmo evolutivo
-	@author Rosetta Code
-	@date 04/01/2023
-
-	O código a seguir é uma adaptação do disponibilizado no site Rosetta Code. 
-	A versão original é encontrada neste link: https://rosettacode.org/wiki/Evolutionary_algorithm
-
-	@details Pseudocódigo
-	
-    Início
-        Sequência de caracteres alvo: "O TEJO GUARDA GRANDES NAVIOS".
-        Uma sequência de caracteres aleatória (pai) com todas as letras maiúsculas do alfabeto e um espaço, do mesmo tamanho da frase alvo.
-        Uma função de fitness que calcula o quão próximo a frase pai está da frase alvo.
-        Uma função de mutação que, dado uma frase e um grau de mutação, retorna uma cópia da frase com alguns caracteres modificados.
-        Enquanto a frase pai não for igual a frase alvo:
-            copia a frase pai C vezes, sendo que em cada vez há uma probabilidade de que outro caractere sofra mutação.
-            Seleciona a frase pai com o maior grau de fitness dentre as cópias e descarta as demais.
-            Repete até que a frase pai, seja igual (ou semelhante) a frase alvo.
-	Fim
-
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 const char alvo[] = "o tejo guarda grandes navios";
-const char pai[] = "abcdefghijklmnopqrstuvxwz ";
+const char alfabeto[] = "abcdefghijklmnopqrstuvxwz ";
 
-#define ESCOLHA (sizeof(pai) - 1)
-#define MUTACAO 30
+#define TAMANHO (sizeof(alvo) / sizeof(char))
+#define ESCOLHA (sizeof(alfabeto) - 1)
+#define MUTACAO 15
 #define COPIAS 30
 
-
-// Retorna um número aleatório de 0 a n-1 
 int gerarNumAleatorio(int n)
 {
-	int r, rand_max = RAND_MAX - (RAND_MAX % n);
-	while((r = rand()) >= rand_max);
-	return r / (rand_max / n);
+	int r = rand() % n;
+	return r;
 }
 
-// Número de caracteres diferentes entre a sequência A e B
 int grauDeDiferenca(const char *copia, const char *alvo)
 {
 	int i = 0, qtdDistintos = 0;
-	for (i = 0; copia[i]; i++)
+	for (i = 0; i < TAMANHO; i++)
 		qtdDistintos += (copia[i] != alvo[i]);
 	return qtdDistintos;
 }
 
-void mutacao(const char *a, char *b)
+void mutacao(char *descendente)
 {
-	int i = 0;
-	for (i = 0; i < a[i]; i++){
-		if(gerarNumAleatorio(MUTACAO)) b[i] = a[i];
-		else b[i] = pai[gerarNumAleatorio(ESCOLHA)];
+	int j = TAMANHO;
+	for (int i = 0; i < MUTACAO; i++){
+		descendente[gerarNumAleatorio(j)] = alfabeto[gerarNumAleatorio(ESCOLHA)];
 	}
-	b[i] = '\0';
 }
 
-int inicializa(int n)
+void recombinacaoUmPonto(char *pai, char *mae, char *filho){
+	int pontoDeCrossover = TAMANHO/2;
+
+	for(int i = 0; i < TAMANHO; i++){
+		if(i <= pontoDeCrossover)
+			filho[i] = pai[i];
+		else
+			filho[i] = mae[i];
+	}
+}
+
+int inicializa(char *primeiroDescendente)
 {
-	int r, rand_max = RAND_MAX - (RAND_MAX % n);
+	int letraAleatoria = 0, i = 0;
 	srand(time(NULL));
-	while((r = rand()) >= rand_max);
-	return r / (rand_max / n);
+	letraAleatoria = rand() % ESCOLHA;
+
+	primeiroDescendente[0] = alfabeto[letraAleatoria];
+
+	for(i = 1; i < TAMANHO-1; i++)
+		primeiroDescendente[i] = alfabeto[gerarNumAleatorio(ESCOLHA)];
+
+	primeiroDescendente[i] = '\0';
+	
+	return letraAleatoria;
 }
 
 int main(void)
 {
-	int i = 0, j = 0, unfit, melhor, iteracao = 0;
-	char descendentes[COPIAS][sizeof(alvo) / sizeof(char)];
+	int iteracao = 0;
+	char populacao[COPIAS][TAMANHO] = {'\0'};
 
-	descendentes[0][0] = pai[inicializa(ESCOLHA)];
-
-	for (i = 1; i < alvo[i]; i++)
-		descendentes[0][i] = pai[gerarNumAleatorio(ESCOLHA)];
-	descendentes[0][i] = 0;
-
+	inicializa(populacao[0]);
+	inicializa(populacao[1]);
+	
 	do{
-		for (i = 1; i < COPIAS; i++)
-			//recombinacao(descendentes[0], descendentes[i]);
-			mutacao(descendentes[0], descendentes[i]);
+		for (int i = 2; i < COPIAS; i++){
+			recombinacaoUmPonto(populacao[i-2], populacao[i-1], populacao[i]);
+			mutacao(populacao[i]);
+		}
 
-		//Encontra a cópia com o melhor fitness
-		for (i = 0; i < COPIAS; i++) {
-			unfit = grauDeDiferenca(descendentes[i], alvo);
-			if(unfit < melhor || !i) {
+		int unfit, melhor, segundoMelhor, pai = 0, mae = 0;
+		for(int i = 0; i < COPIAS; i++){
+			unfit = grauDeDiferenca(populacao[i], alvo);
+			if(unfit < melhor){
 				melhor = unfit;
-				j = i;
+				pai = i;
+			}
+			else if(unfit < segundoMelhor){
+				segundoMelhor = unfit;
+				mae = i;
 			}
 		}
 
-		if(j != 0){
-			strcpy(descendentes[0], descendentes[j]);
-		}	
-		printf("Iteracao %d, pontos %d: %s\n", iteracao++, melhor, descendentes[0]);
-	}while (melhor != 0);
+		strcpy(populacao[0], populacao[pai]);
+		strcpy(populacao[1], populacao[mae]);
+		
+		printf("Iteracao %d, pai pontos %d: %s\n", iteracao++, melhor, populacao[0]);
+		printf("Iteracao %d, mae pontos %d: %s\n", iteracao++, segundoMelhor, populacao[1]);
+
+	}while (iteracao < 5000);
 
 	return 0;
 }
