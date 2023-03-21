@@ -17,20 +17,45 @@ int gerarNumAleatorio(int n)
 	return r;
 }
 
-int grauDeDiferenca(const char *copia, const char *alvo)
+int grauDeDiferenca(const char *copia)
 {
 	int i = 0, qtdDistintos = 0;
-	for (i = 0; i < TAMANHO; i++)
-		qtdDistintos += (copia[i] != alvo[i]);
+	for (i = 0; i < TAMANHO; i++){
+		if(copia[i] != alvo[i])
+			qtdDistintos++;
+	}
 	return qtdDistintos;
+}
+
+int selecaoPorTorneio(char populacao[COPIAS][TAMANHO]){
+
+	int melhor=RAND_MAX, segundoMelhor=RAND_MAX;
+	int unfit = 0, pai = 0, mae = 0;
+
+	for(int i = 2; i < COPIAS; i++){
+		unfit = grauDeDiferenca(populacao[i]);
+		if(unfit < melhor){
+			melhor = unfit;
+			pai = i;
+		}
+		else if(unfit < segundoMelhor){
+			segundoMelhor = unfit;
+			mae = i;
+		}
+	}
+
+	strcpy(populacao[0], populacao[pai]);
+	strcpy(populacao[1], populacao[mae]);
+
+	return melhor;
 }
 
 void mutacao(char *descendente)
 {
-	int j = TAMANHO;
-	for (int i = 0; i < MUTACAO; i++){
-		descendente[gerarNumAleatorio(j)] = alfabeto[gerarNumAleatorio(ESCOLHA)];
-	}
+	int r = gerarNumAleatorio(100);
+	int posicao = gerarNumAleatorio(TAMANHO-2);
+	if(r < MUTACAO)
+		descendente[posicao] = alfabeto[gerarNumAleatorio(ESCOLHA)];
 }
 
 void recombinacaoUmPonto(char *pai, char *mae, char *filho){
@@ -65,8 +90,9 @@ int main(void)
 	int iteracao = 0;
 	char populacao[COPIAS][TAMANHO] = {'\0'};
 
+	// Inicializamos o pai e a mae
 	inicializa(populacao[0]);
-	inicializa(populacao[1]);
+	strcpy(populacao[1],alfabeto);
 	
 	do{
 		for (int i = 2; i < COPIAS; i++){
@@ -74,26 +100,12 @@ int main(void)
 			mutacao(populacao[i]);
 		}
 
-		int unfit, melhor, segundoMelhor, pai = 0, mae = 0;
-		for(int i = 0; i < COPIAS; i++){
-			unfit = grauDeDiferenca(populacao[i], alvo);
-			if(unfit < melhor){
-				melhor = unfit;
-				pai = i;
-			}
-			else if(unfit < segundoMelhor){
-				segundoMelhor = unfit;
-				mae = i;
-			}
-		}
+		int melhor = selecaoPorTorneio(populacao);
 
-		strcpy(populacao[0], populacao[pai]);
-		strcpy(populacao[1], populacao[mae]);
-		
-		printf("Iteracao %d, pai pontos %d: %s\n", iteracao++, melhor, populacao[0]);
-		printf("Iteracao %d, mae pontos %d: %s\n", iteracao++, segundoMelhor, populacao[1]);
+		printf("Iteracao %d, pai pontos %d: %s\n", iteracao, melhor, populacao[0]);
+		iteracao++;
 
-	}while (iteracao < 5000);
+	}while (iteracao < 500);
 
 	return 0;
 }
