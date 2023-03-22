@@ -8,8 +8,10 @@ const char alfabeto[] = "abcdefghijklmnopqrstuvxwz ";
 
 #define TAMANHO (sizeof(alvo) / sizeof(char))
 #define ESCOLHA (sizeof(alfabeto) - 1)
+
 #define MUTACAO 15
-#define COPIAS 30
+#define COPIAS 300
+#define GERACOES 300
 
 int gerarNumAleatorio(int n)
 {
@@ -54,7 +56,7 @@ void mutacao(char *descendente)
 {
 	int r = gerarNumAleatorio(100);
 	int posicao = gerarNumAleatorio(TAMANHO-2);
-	if(r < MUTACAO)
+	if(r <= MUTACAO)
 		descendente[posicao] = alfabeto[gerarNumAleatorio(ESCOLHA)];
 }
 
@@ -105,7 +107,7 @@ int main(void)
 		printf("Iteracao %d, pai pontos %d: %s\n", iteracao, melhor, populacao[0]);
 		iteracao++;
 
-	}while (iteracao < 500);
+	}while (iteracao <= GERACOES);
 
 	return 0;
 }
