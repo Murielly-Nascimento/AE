@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/time.h>
 
+#define LETRAS 26
 #define TAMANHO	29
 typedef struct{
 	int fitness;
@@ -10,8 +12,8 @@ typedef struct{
 }POPULACAO;
 
 #define MUTACAO	15
-#define GERACOES 30
-#define INDIVIDUOS 300
+#define GERACOES 40
+#define INDIVIDUOS 400
 
 int gerarNumAleatorio(int n)
 {
@@ -32,13 +34,13 @@ int fitness(POPULACAO copia, const char *alvo)
 
 void mutacao(POPULACAO filho)
 {
-	const char alfabeto[] = "abcdefghijklmnopqrstuvxwz ";
+	const char alfabeto[TAMANHO] = "abcdefghijklmnopqrstuvxwz  ";
 
 	int r = gerarNumAleatorio(100);
 	int posicao = gerarNumAleatorio(TAMANHO-2);
 
 	if(r <= MUTACAO)
-		filho.frase[posicao] = alfabeto[gerarNumAleatorio(28)];
+		filho.frase[posicao] = alfabeto[gerarNumAleatorio(LETRAS)];
 }
 
 POPULACAO recombinacaoUmPonto(POPULACAO pai, POPULACAO mae){
@@ -86,18 +88,18 @@ POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS],const char* alvo){
 
 void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 {
-	const char alfabeto[] = "abcdefghijklmnopqrstuvxwz ";
+	const char alfabeto[TAMANHO] = "abcdefghijklmnopqrstuvxwz  ";
 
 	int i = 0, j = 0;
 	for (i = 0; i < INDIVIDUOS; i++){
 		for(j = 0; j < TAMANHO-1; j++){
 			if(j == 0 && i == 0){
 				srand(time(NULL));
-				int letra  = rand() % 25;
+				int letra  = rand() % LETRAS;
 				populacao[i].frase[j] = alfabeto[letra];
 			}
 			else 
-				populacao[i].frase[j] = alfabeto[gerarNumAleatorio(25)];
+				populacao[i].frase[j] = alfabeto[gerarNumAleatorio(LETRAS)];
 		}
 		populacao[i].frase[j] = '\0';
 		populacao[i].fitness = fitness(populacao[i], alvo);
