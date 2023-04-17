@@ -56,19 +56,29 @@ POPULACAO recombinacaoUmPonto(POPULACAO pai, POPULACAO mae){
 	return filho;
 }
 
-POPULACAO torneio(POPULACAO A, POPULACAO B){
-	if(A.fitness < B.fitness) return A;
-	else return B;
+POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS], int N){
+	POPULACAO melhor = populacao[gerarNumAleatorio(INDIVIDUOS-1)];
+	int i = 2;
+
+	do{
+		POPULACAO aux = populacao[gerarNumAleatorio(INDIVIDUOS-1)];
+		if(aux.fitness < melhor.fitness){
+			melhor = aux;
+		}
+		i++;
+	}while(i < N);
+
+	return melhor;
 }
 
-POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS],const char* alvo){
+POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo){
 	POPULACAO novaPopulacao[INDIVIDUOS];
 	POPULACAO melhor;
 	melhor.fitness=RAND_MAX;
 
 	for(int i = 0; i < INDIVIDUOS; i++){
-		POPULACAO pai = torneio(populacao[gerarNumAleatorio(INDIVIDUOS-1)], populacao[gerarNumAleatorio(INDIVIDUOS-1)]);
-		POPULACAO mae = torneio(populacao[gerarNumAleatorio(INDIVIDUOS-1)], populacao[gerarNumAleatorio(INDIVIDUOS-1)]);
+		POPULACAO pai = selecaoPorTorneio(populacao, 3);
+		POPULACAO mae = selecaoPorTorneio(populacao, 3);
 		
 		POPULACAO filho = recombinacaoUmPonto(pai, mae);
 		mutacao(filho);
@@ -93,13 +103,7 @@ void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 	int i = 0, j = 0;
 	for (i = 0; i < INDIVIDUOS; i++){
 		for(j = 0; j < TAMANHO-1; j++){
-			if(j == 0 && i == 0){
-				srand(time(NULL));
-				int letra  = rand() % LETRAS;
-				populacao[i].frase[j] = alfabeto[letra];
-			}
-			else 
-				populacao[i].frase[j] = alfabeto[gerarNumAleatorio(LETRAS)];
+			populacao[i].frase[j] = alfabeto[gerarNumAleatorio(LETRAS)];
 		}
 		populacao[i].frase[j] = '\0';
 		populacao[i].fitness = fitness(populacao[i], alvo);
@@ -108,23 +112,32 @@ void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 
 int main(void)
 {
+	clock_t inicio, fim;
+	double total = 0;
+	inicio = clock();
+
 	const char alvo[] = "o tejo guarda grandes navios";
 	
 	int geracao = 0;
 	POPULACAO populacao[INDIVIDUOS];
 
+	srand(time(NULL));
 	inicializa(populacao, alvo);
 
 	do{
 		POPULACAO melhor;
 		melhor.fitness=RAND_MAX;
 
-		melhor = selecaoPorTorneio(populacao, alvo);
+		melhor = reproducao(populacao, alvo);
 
 		printf("Iteracao %d, pai pontos %d: %s\n", geracao, melhor.fitness, melhor.frase);
 		geracao++;
 
 	}while (geracao <= GERACOES);
 
+	fim = clock();
+
+	total = (double)(fim-inicio)/CLOCKS_PER_SEC;
+	printf("Tempo total gasto pela CPU: %lf\n", total);
 	return 0;
 }
