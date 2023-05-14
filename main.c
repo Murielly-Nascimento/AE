@@ -13,7 +13,7 @@ typedef struct{
 }POPULACAO;
 
 #define MUTACAO	15
-#define GERACOES 160
+#define GERACOES 280
 #define INDIVIDUOS 400
 
 int gerarNumAleatorio(int n)
@@ -44,24 +44,14 @@ void mutacao(POPULACAO filho)
 		filho.frase[posicao] = alfabeto[gerarNumAleatorio(LETRAS)];
 }
 
-POPULACAO recombinacaoDoisPontos(POPULACAO pai, POPULACAO mae){
-	int pontoDeCrossoverUm = gerarNumAleatorio(TAMANHO-2);
-	int pontoDeCrossoverDois = gerarNumAleatorio(TAMANHO-2);
+POPULACAO recombinacaoUniforme(POPULACAO pai, POPULACAO mae){
 	POPULACAO filho;
 
-	if(pontoDeCrossoverDois < pontoDeCrossoverUm){
-		int aux = pontoDeCrossoverDois;
-		pontoDeCrossoverDois = pontoDeCrossoverUm;
-		pontoDeCrossoverUm = aux;
-	}
-
 	for(int i = 0; i < TAMANHO; i++){
-		if(i <= pontoDeCrossoverUm)
+		if(gerarNumAleatorio(2) == 1)
 			filho.frase[i] = pai.frase[i];
-		else if(i >= pontoDeCrossoverUm && i <=pontoDeCrossoverDois)
-			filho.frase[i] = mae.frase[i];
 		else
-			filho.frase[i] = pai.frase[i];
+			filho.frase[i] = mae.frase[i];
 	}
 	return filho;
 }
@@ -94,39 +84,6 @@ POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS], int N){
 	return melhor;
 }
 
-void melhores(POPULACAO populacao[INDIVIDUOS]){
-	POPULACAO pai, mae;
-	pai.fitness = RAND_MAX;
-	mae.fitness = RAND_MAX;
-
-	for(int i = 0; i < INDIVIDUOS; i++){
-		if(populacao[i].fitness < pai.fitness)
-			pai = populacao[i];
-		else if(populacao[i].fitness < mae.fitness)
-			mae = populacao[i];
-	}
-
-	populacao[0] = pai;
-	populacao[1] = mae;
-}
-
-POPULACAO selecaoPorElitismo(POPULACAO populacao[INDIVIDUOS],const char* alvo){
-	POPULACAO melhor;
-
-	for(int i = 2; i < INDIVIDUOS; i++){
-		melhores(populacao);
-		
-		POPULACAO filho = recombinacaoDoisPontos(populacao[i-2], populacao[i-1]);
-		mutacao(filho);
-		filho.fitness = fitness(filho,alvo);
-		
-		populacao[i] = filho;
-	}
-	melhor = populacao[0];
-
-	return melhor;
-}
-
 POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo){
 	POPULACAO novaPopulacao[INDIVIDUOS];
 	POPULACAO melhor;
@@ -138,7 +95,7 @@ POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo){
 		POPULACAO pai = selecaoPorTorneio(populacao, N);
 		POPULACAO mae = selecaoPorTorneio(populacao, N);
 		
-		POPULACAO filho = recombinacaoDoisPontos(pai, mae);
+		POPULACAO filho = recombinacaoUniforme(pai, mae);
 		mutacao(filho);
 		filho.fitness = fitness(filho,alvo);
 
@@ -186,10 +143,7 @@ int main(void)
 		POPULACAO melhor;
 		melhor.fitness=RAND_MAX;
 
-		if(geracao <= (GERACOES - (GERACOES/4)))
-			melhor = reproducao(populacao, alvo);
-		else 
-			melhor = selecaoPorElitismo(populacao, alvo);
+		melhor = reproducao(populacao, alvo);
 
 		printf("\nIteracao %d, melhor fitness %d.\n", geracao, melhor.fitness);
 		printf("%s\n", melhor.frase);
