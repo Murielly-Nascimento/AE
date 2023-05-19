@@ -14,7 +14,7 @@ typedef struct{
 
 #define MUTACAO	15
 #define GERACOES 280
-#define INDIVIDUOS 400
+#define INDIVIDUOS 700
 
 int gerarNumAleatorio(int n)
 {
@@ -84,12 +84,39 @@ POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS], int N){
 	return melhor;
 }
 
+POPULACAO selecaoPorElitismo(POPULACAO populacao[INDIVIDUOS], const char* alvo){
+	const int taxa = 30;
+	const int selecionados = INDIVIDUOS*taxa/100;
+
+	POPULACAO novaPopulacao[INDIVIDUOS];
+	POPULACAO melhor;
+	melhor.fitness = RAND_MAX;
+
+	for(int i = 0; i < selecionados; i++){
+		novaPopulacao[i] = selecaoPorTorneio(populacao, 3);
+	}
+
+	for(int i = selecionados; i < INDIVIDUOS; i++){
+		POPULACAO pai = novaPopulacao[gerarNumAleatorio(selecionados-1)];
+		POPULACAO mae = novaPopulacao[gerarNumAleatorio(selecionados-1)];
+		POPULACAO filho = recombinacaoUniforme(pai, mae);
+		mutacao(filho);
+		filho.fitness = fitness(filho,alvo);
+
+		if(filho.fitness < melhor.fitness) 
+			melhor = filho;
+		
+		novaPopulacao[i] = filho;
+	}
+	return melhor;
+}
+
 POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo){
 	POPULACAO novaPopulacao[INDIVIDUOS];
 	POPULACAO melhor;
 	melhor.fitness=RAND_MAX;
 
-	int N = 3;
+	const int N = 3;
 
 	for(int i = 0; i < INDIVIDUOS; i++){
 		POPULACAO pai = selecaoPorTorneio(populacao, N);
@@ -142,8 +169,12 @@ int main(void)
 	do{
 		POPULACAO melhor;
 		melhor.fitness=RAND_MAX;
+		int metade = GERACOES - (GERACOES/2);
 
-		melhor = reproducao(populacao, alvo);
+		if(geracao < metade)
+			melhor = reproducao(populacao, alvo);
+		else
+			melhor = selecaoPorElitismo(populacao, alvo);
 
 		printf("\nIteracao %d, melhor fitness %d.\n", geracao, melhor.fitness);
 		printf("%s\n", melhor.frase);
