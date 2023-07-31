@@ -13,11 +13,25 @@ typedef struct{
 	char frase[TAMANHO];
 }POPULACAO;
 
-#define MUTACAO	30
-#define GERACOES 100
-#define INDIVIDUOS 200
-//#define ELITISMO 10
+#define MUTACAO	15
+#define GERACOES 280
+#define INDIVIDUOS 400
 #define TORNEIO 3
+#define ELITISMO 10
+
+void escreveRelatorio(double tempo, int fitness){
+	FILE *arq;
+	arq = fopen("relatorio.txt", "a");
+
+	if(arq == NULL){
+		printf("Problemas na criação do arquivo\n");
+		return;
+	}
+	int result = fprintf(arq, "%.3lf&%d\n",tempo,fitness);
+	if(result == EOF)
+		printf("Erro na gravação\n");
+	fclose(arq);
+}
 
 int gerarNumAleatorio(int n)
 {
@@ -42,36 +56,24 @@ void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 
 	int i = 0, j = 0;
 	for (i = 0; i < INDIVIDUOS; i++){
-		for(j = 0; j < TAMANHO-1; j++){
+		for(j = 0; j < TAMANHO-1; j++)
 			populacao[i].frase[j] = alfabeto[gerarNumAleatorio(LETRAS)];
-		}
 		populacao[i].frase[j] = '\0';
 		populacao[i].fitness = fitness(populacao[i], alvo);
 	}
 }
 
-void escreveRelatorio(double tempo, int fitness){
-	FILE *arq;
-	arq = fopen("relatorio.txt", "a");
-
-	if(arq == NULL){
-		printf("Problemas na criação do arquivo\n");
-		return;
-	}
-	int result = fprintf(arq, "%.3lf&%d\n",tempo,fitness);
-	if(result == EOF)
-		printf("Erro na gravação\n");
-	fclose(arq);
-}
-
-void mutacao(POPULACAO filho){ 
+POPULACAO mutacao(POPULACAO filho){ 
+	POPULACAO individuo = filho;
 	const char alfabeto[] = "ABCDEFGHIJKLMNOPQRSTUVXWZabcdefghijklmnopqrstuvxwz,\n.  ";
 
 	int r = gerarNumAleatorio(100);
 	int posicao = gerarNumAleatorio(TAMANHO-2);
 
 	if(r <= MUTACAO)
-		filho.frase[posicao] = alfabeto[gerarNumAleatorio(LETRAS)];
+		individuo.frase[posicao] = alfabeto[gerarNumAleatorio(LETRAS)];
+
+	return individuo;
 }
 
 POPULACAO recombinacaoUniforme(POPULACAO pai, POPULACAO mae){
@@ -85,31 +87,6 @@ POPULACAO recombinacaoUniforme(POPULACAO pai, POPULACAO mae){
 	}
 	return filho;
 }
-/*
-void ordernaPopulacao(POPULACAO populacao[INDIVIDUOS], const char* alvo){
-	POPULACAO aux;
-	for (int i = 0; i < INDIVIDUOS; ++i){ 
-		populacao[i].fitness = fitness(populacao[i], alvo);
-		for (int j = i + 1; j < INDIVIDUOS; ++j){
-			populacao[j].fitness = fitness(populacao[j], alvo);
-			if (populacao[i].fitness > populacao[j].fitness){ 
-				aux =  populacao[i];
-				populacao[i] = populacao[j];
-				populacao[j] = aux; 
-			}
-		}
-	}
-}
-*/
-/*
-int elitismo(POPULACAO populacao[INDIVIDUOS],const char* alvo){
-	int selecionados = INDIVIDUOS*ELITISMO/100;
-	
-	ordernaPopulacao(populacao, alvo);
-
-	return selecionados;
-}
-*/
 
 POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
 	POPULACAO melhor;
@@ -124,36 +101,55 @@ POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
 	return melhor;
 }
 
+void shellSort(POPULACAO populacao[INDIVIDUOS], int n) {
+	for (int intervalo = n/2; intervalo > 0; intervalo/= 2) {
+		for (int i = intervalo; i < n; i+= 1) {
+			POPULACAO aux = populacao[i];
+			int j = 0;
+			for (j = i; j >= intervalo && populacao[j - intervalo].fitness > aux.fitness; j -= intervalo) {
+				populacao[j] = populacao[j - intervalo];
+			}
+			populacao[j] = aux;
+		}
+	}
+}
 
-POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo, int geracoes){
-	POPULACAO novaPopulacao[INDIVIDUOS],aux[INDIVIDUOS], melhor;
-	melhor.fitness=RAND_MAX;
+int elitismo(POPULACAO populacao[INDIVIDUOS],const char* alvo){
+	int selecionados = INDIVIDUOS*ELITISMO/100;
 	
-	//int taxaDeElitismo = 0;
-	/*if(geracoes >= GERACOES/2){
+	int size = sizeof(populacao)/sizeof(populacao[0]);
+	shellSort(populacao, size);
+
+	return selecionados;
+}
+
+POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo, int geracoes)
+{
+	POPULACAO novaPopulacao[INDIVIDUOS], melhor, pai, mae, filho;
+	melhor.fitness=RAND_MAX;
+
+	int taxaDeElitismo = 0;
+	if(geracoes >= GERACOES/2){
 		taxaDeElitismo = elitismo(populacao, alvo);
 		melhor = populacao[0];
 	}
-	*/
-	for(int i = 0; i< INDIVIDUOS; i++)
-		novaPopulacao[i] = populacao[i];
 
-	for(int i = 0; i < INDIVIDUOS; i++){
-		POPULACAO pai = selecaoPorTorneio(novaPopulacao);
-		POPULACAO mae = selecaoPorTorneio(novaPopulacao);
-		POPULACAO filho = recombinacaoUniforme(pai, mae);
-		
-		mutacao(filho);
+	for(int i = taxaDeElitismo; i < INDIVIDUOS; i++){
+		pai = selecaoPorTorneio(populacao);
+		mae = selecaoPorTorneio(populacao);
+
+		filho = recombinacaoUniforme(pai, mae);
+		filho = mutacao(filho);
 		filho.fitness = fitness(filho,alvo);
 
 		if(filho.fitness < melhor.fitness) 
 			melhor = filho;
 	
-		aux[i] = filho;
+		novaPopulacao[i] = filho;
 	}
 
-	for(int i = 0; i < INDIVIDUOS; i++)
-		populacao[i] = aux[i];
+	for(int i = taxaDeElitismo; i < INDIVIDUOS; i++)
+		populacao[i] = novaPopulacao[i];
 
 	return melhor;
 }
@@ -167,8 +163,7 @@ int main(void)
 	const char alvo[] = "O Tejo tem grandes navios.\nE navega nele ainda,\nPara aqueles que veem em tudo o que la nao esta,\nA memoria das naus.";
 	
 	int geracao = 0;
-	POPULACAO populacao[INDIVIDUOS];
-	POPULACAO melhor;
+	POPULACAO populacao[INDIVIDUOS], melhor;
 
 	srand(time(NULL));
 	inicializa(populacao, alvo);
