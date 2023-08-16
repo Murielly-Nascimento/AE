@@ -13,12 +13,15 @@ typedef struct{
 	char frase[TAMANHO];
 }POPULACAO;
 
+//Parâmetros do Algoritmo Evolutivo
 #define MUTACAO	15
 #define GERACOES 280
 #define INDIVIDUOS 400
 #define TORNEIO 3
 #define ELITISMO 10
 
+/*Escreve em um arquivo texto o tempo para execução
+  do programa e o fitness do melhor indivíduo obtido*/
 void escreveRelatorio(double tempo, int fitness){
 	FILE *arq;
 	arq = fopen("relatorio.txt", "a");
@@ -39,6 +42,8 @@ int gerarNumAleatorio(int n)
 	return r;
 }
 
+/*O fitness do indivíduo é calculado pelo número de caracteres distintos entre 
+a frase cópia e a alvo, quanto menor esse número mais adaptado o indivíduo é.*/
 int fitness(POPULACAO copia, const char *alvo)
 {
 	int qtdDistintos = 0;
@@ -50,6 +55,7 @@ int fitness(POPULACAO copia, const char *alvo)
 	return qtdDistintos;
 }
 
+/*A população é inicializada aleatóriamente e o seu fitness já é calculado*/
 void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 {
 	const char alfabeto[] = "ABCDEFGHIJKLMNOPQRSTUVXWZabcdefghijklmnopqrstuvxwz,\n.  ";
@@ -63,6 +69,8 @@ void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 	}
 }
 
+/*Considerando a taxa de mutação, se um número aleatório gerado for
+menor ou igual a ela, uma letra da frase cópia é alterada.*/
 POPULACAO mutacao(POPULACAO filho){ 
 	POPULACAO individuo = filho;
 	const char alfabeto[] = "ABCDEFGHIJKLMNOPQRSTUVXWZabcdefghijklmnopqrstuvxwz,\n.  ";
@@ -114,6 +122,9 @@ void shellSort(POPULACAO populacao[INDIVIDUOS], int n) {
 	}
 }
 
+/*É calculado a quantidade de indivíduos (os melhores) que ocuparão
+as posições iniciais do vetor e não sofreram a ação dos agentes mutação 
+e recombinação na função reprodução. */
 int elitismo(POPULACAO populacao[INDIVIDUOS],const char* alvo){
 	int selecionados = INDIVIDUOS*ELITISMO/100;
 	
@@ -123,6 +134,9 @@ int elitismo(POPULACAO populacao[INDIVIDUOS],const char* alvo){
 	return selecionados;
 }
 
+/*Esta função é responsável por coordenar a reprodução dos indivíduos.
+Nela as demais funções (elitismo, torneio, mutação, recombinação) são 
+aplicadas na população.*/
 POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo, int geracoes)
 {
 	POPULACAO novaPopulacao[INDIVIDUOS], melhor, pai, mae, filho;
