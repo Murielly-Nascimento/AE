@@ -4,7 +4,7 @@
 #include <time.h>
 #include <conio.h>
 
-#define LETRAS 55
+#define LETRAS 28
 #define TAMANHO	117
 typedef struct{
 	int fitness;
@@ -14,7 +14,7 @@ typedef struct{
 
 #define MUTACAO	15
 #define GERACOES 280
-#define INDIVIDUOS 400
+#define INDIVIDUOS 300
 #define TORNEIO 3
 #define ELITISMO 10
 
@@ -91,7 +91,8 @@ int fitness(POPULACAO copia, const char *alvo)
 /* Função: inicializa
 
     Inicializa as frases da sequência população e calcula o fitness
-	de cada uma delas.
+	de cada uma delas. Sendo que os caracteres usados para a inicialização 
+	são aqueles contidos na frase alvo.
 
 	Parâmetros:
 		população - sequência do tipo POPULACAO de tamanho INDIVIDUOS.
@@ -102,7 +103,7 @@ int fitness(POPULACAO copia, const char *alvo)
 */
 void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 {
-	const char alfabeto[] = "ABCDEFGHIJKLMNOPQRSTUVXWZabcdefghijklmnopqrstuvxwz,\n.  ";
+	const char alfabeto[] = "OTjEgPvtqltAemoridnaus,\n.  ";
 
 	int i = 0, j = 0;
 	for (i = 0; i < INDIVIDUOS; i++){
@@ -115,25 +116,25 @@ void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 
 /* Função: mutacao
 
-    Altera o gene (caracter) de uma frase filho (cópia).
+    Altera o gene (caracter) de uma frase filho (cópia), sendo que
+	os caracteres usados para a mutação são aqueles contidos na frase alvo.
 
 	Parâmetros:
 		filho - Um dos indivíduos da população.
-		alvo - Sequência de caracteres da frase alvo.
 		
 	Retorno: 
 		O indivíduo da população após ser mutado.
 */
-POPULACAO mutacao(POPULACAO filho, const char *alvo){ 
+POPULACAO mutacao(POPULACAO filho, const char* alvo){ 
 	POPULACAO individuo = filho;
-	const char alfabeto[] = "ABCDEFGHIJKLMNOPQRSTUVXWZabcdefghijklmnopqrstuvxwz,\n.  ";
+	const char alfabeto[] = "OTjEgPvtqltAemoridnaus,\n.  ";
 
 	int r = gerarNumAleatorio(100);
 	int posicao = gerarNumAleatorio(TAMANHO-2);
 
 	if(r <= MUTACAO)
-		individuo.frase[posicao] = alvo[posicao];
-	//individuo.frase[posicao] = alfabeto[gerarNumAleatorio(LETRAS)];
+		individuo.frase[posicao] = alfabeto[gerarNumAleatorio(LETRAS)];
+		//individuo.frase[posicao] = alvo[posicao];
 
 	return individuo;
 }
@@ -187,28 +188,11 @@ POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
 	return melhor;
 }
 
-/* Função: shellSort
-
-    Ordena a população, com base no fitness, decrescente.
-
-	Parâmetros:
-		populacao - população de indivíduos (frases cópias).
-		n - distância de salto.
-		
-	Retorno: 
-		Nulo.
-*/
-void shellSort(POPULACAO populacao[INDIVIDUOS], int n) {
-	for (int intervalo = n/2; intervalo > 0; intervalo/= 2) {
-		for (int i = intervalo; i < n; i+= 1) {
-			POPULACAO aux = populacao[i];
-			int j = 0;
-			for (j = i; j >= intervalo && populacao[j - intervalo].fitness > aux.fitness; j -= intervalo) {
-				populacao[j] = populacao[j - intervalo];
-			}
-			populacao[j] = aux;
-		}
-	}
+int comparacao(const void* A, const void* B){
+	POPULACAO C = *(POPULACAO*)A;
+	POPULACAO D = *(POPULACAO*)B;
+	if(C.fitness > D.fitness) return 1;
+	else return -1;
 }
 
 /* Função: elitismo
@@ -216,7 +200,7 @@ void shellSort(POPULACAO populacao[INDIVIDUOS], int n) {
     Calcula o número de indivíduos da população que
 	não sofreram a ação dos operadores recombinação e mutação
 	na função reproducao. Em seguida chama a função de ordenação
-	shellSort, os indivíduos mais adaptados ocupam as posições iniciais.
+	qsort, os indivíduos mais adaptados ocupam as posições iniciais.
 
 	Parâmetros:
 		populacao - População de indivíduos (frases cópias).
@@ -227,10 +211,7 @@ void shellSort(POPULACAO populacao[INDIVIDUOS], int n) {
 */
 int elitismo(POPULACAO populacao[INDIVIDUOS],const char* alvo){
 	int selecionados = INDIVIDUOS*ELITISMO/100;
-	
-	int size = sizeof(populacao)/sizeof(populacao[0]);
-	shellSort(populacao, size);
-
+	qsort(populacao, INDIVIDUOS, sizeof(populacao[0]), comparacao);
 	return selecionados;
 }
 
@@ -251,8 +232,8 @@ POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo, int gerac
 {
 	POPULACAO novaPopulacao[INDIVIDUOS], melhor, pai, mae, filho;
 	melhor.fitness=RAND_MAX;
-
 	int taxaDeElitismo = 0;
+
 	if(geracoes >= GERACOES/2){
 		taxaDeElitismo = elitismo(populacao, alvo);
 		melhor = populacao[0];
