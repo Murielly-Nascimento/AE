@@ -11,12 +11,11 @@ typedef struct{
 	char frase[TAMANHO];
 }POPULACAO;
 
-
+#define TORNEIO 3
 #define MUTACAO	15
+#define ELITISMO 10
 #define GERACOES 280
 #define INDIVIDUOS 300
-#define TORNEIO 3
-#define ELITISMO 10
 
 /* Função: escreveRelatorio
 
@@ -60,7 +59,7 @@ void escreveRelatorio(double tempo, int fitness){
 */
 int gerarNumAleatorio(int n)
 {
-	int r = rand() % n;
+	int r = (int)(n * rand() / RAND_MAX);
 	return r;
 }
 
@@ -125,7 +124,7 @@ void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 	Retorno: 
 		O indivíduo da população após ser mutado.
 */
-POPULACAO mutacao(POPULACAO filho, const char* alvo){ 
+POPULACAO mutacao(POPULACAO filho){ 
 	POPULACAO individuo = filho;
 	const char alfabeto[] = "OTjEgPvtqltAemoridnaus,\n.  ";
 
@@ -188,6 +187,18 @@ POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
 	return melhor;
 }
 
+/* Função: comparação
+
+    Usada para execução do qsort, esta função recebe dois INDIVIDUOS
+	e os compara determinando qual deles possui menor fitness.
+
+	Parâmetros:
+		A - indivíduo.
+		B - indivíduo.
+		
+	Retorno: 
+		Se A é maior que B, ou o contrário.
+*/
 int comparacao(const void* A, const void* B){
 	POPULACAO C = *(POPULACAO*)A;
 	POPULACAO D = *(POPULACAO*)B;
@@ -204,12 +215,11 @@ int comparacao(const void* A, const void* B){
 
 	Parâmetros:
 		populacao - População de indivíduos (frases cópias).
-		alvo - Sequência de caracteres da frase alvo.
 		
 	Retorno: 
 		Número de indivíduos selecionados.
 */
-int elitismo(POPULACAO populacao[INDIVIDUOS],const char* alvo){
+int elitismo(POPULACAO populacao[INDIVIDUOS]){
 	int selecionados = INDIVIDUOS*ELITISMO/100;
 	qsort(populacao, INDIVIDUOS, sizeof(populacao[0]), comparacao);
 	return selecionados;
@@ -235,7 +245,7 @@ POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo, int gerac
 	int taxaDeElitismo = 0;
 
 	if(geracoes >= GERACOES/2){
-		taxaDeElitismo = elitismo(populacao, alvo);
+		taxaDeElitismo = elitismo(populacao);
 		melhor = populacao[0];
 	}
 
@@ -244,7 +254,7 @@ POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo, int gerac
 		mae = selecaoPorTorneio(populacao);
 
 		filho = recombinacaoUniforme(pai, mae);
-		filho = mutacao(filho, alvo);
+		filho = mutacao(filho);
 		filho.fitness = fitness(filho,alvo);
 
 		if(filho.fitness < melhor.fitness) 

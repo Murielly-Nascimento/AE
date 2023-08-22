@@ -7,7 +7,6 @@
 #include <math.h>
 
 #define TABULEIRO 25
-
 typedef struct{
 	int fitness;
 	int indiceMaiorSeq;
@@ -16,28 +15,105 @@ typedef struct{
 
 #define TORNEIO 3
 #define MUTACAO 15
-#define GERACOES 20
+#define ELITISMO 10
+#define GERACOES 50
 #define INDIVIDUOS 100
 
+/* Função: escreveRelatorio
+
+   Escreve no arquivo resultados.txt o tempo para execução
+   do programa e o fitness do melhor indivíduo obtido.
+
+	Parâmetros:
+		tempo - Tempo gasto para execução do programa.
+		fitness - Número de caracteres distintos da frase alvo 
+				  do indivíduo mais adaptado da População.
+	
+	Retorno: 
+		Nulo.
+*/
+void escreveRelatorio(double tempo, int fitness){
+	FILE *arq;
+	arq = fopen("resultados.txt", "a");
+
+	if(arq == NULL){
+		printf("Problemas na criação do arquivo\n");
+		return;
+	}
+	int result = fprintf(arq, "%.3lf&%d\n",tempo,fitness);
+	if(result == EOF)
+		printf("Erro na gravação\n");
+	fclose(arq);
+}
+
+/* Função: gerarNumAleatorio
+
+   Gera um número aleatório no intervalo de 0 a N-1.
+
+	Parâmetros:
+		n - Intervalo.
+		
+	Retorno: 
+		Um número inteiro aleatório.
+	
+	Confira o seguinte link para mais informações sobre a função rand()
+		https://c-faq.com/lib/randrange.html
+*/
 int gerarNumAleatorio(int N)
 {
 	int r = (int)(N * rand() / RAND_MAX);
 	return r;
 }
 
+/* Função: coordenadas
+
+    Dado um número de uma casa do tabuleiro de xadrez
+	calcula as suas respectivas coordenadas X e Y.
+
+	Parâmetros:
+		numeroCasa - número da casa no tabuleiro de xadrez.
+		X - coordenada no eixo das abscissas.
+		Y - coordenada no eixo das ordenadas.
+
+	Retorno: 
+		Nulo.
+*/
 void coordenadas(int numeroCasa, int *X, int *Y){
 	int N = sqrt(TABULEIRO);
 	*X = (numeroCasa-1)/N+1;
 	*Y = (numeroCasa-1)%N+1;
 }
 
+/* Função: posicaoValida
+
+    Dado as coordenadas X e Y verifica se o cavalo
+	está numa posição válida.
+
+	Parâmetros:
+		X - coordenada no eixo das abscissas.
+		Y - coordenada no eixo das ordenadas.
+
+	Retorno: 
+		True se a posição é válida e False caso não.
+*/
 bool posicaoValida(int X, int Y){
 	return (X >= 0 && X < TABULEIRO && Y >= 0 && Y < TABULEIRO);
 }
 
+/* Função: sequenciaValida
+
+    Verifica se o percurso do cavalo é válido e
+	se não vistou a mesma casa mais de uma vez.
+
+	Parâmetros:
+		copia - Indivíduo pertecente a população.
+
+	Retorno: 
+		True se a sequência é válida e False caso não.
+*/
 bool sequenciaValida(POPULACAO copia){
 	int vertices = 0, X = 0, Y = 0;
-	bool visitadas[TABULEIRO+1] = {false}; //O vetor visitadas preecisa ir de 1 a N^2.
+	bool visitadas[TABULEIRO+1] = {false};
 
 	for (int i = 0; i < TABULEIRO; i++){
 		coordenadas(copia.tour[i], &X, &Y);
@@ -54,10 +130,21 @@ bool sequenciaValida(POPULACAO copia){
 	return true;
 }
 
-bool vizinhoValido(int anterior, int atual){
+/* Função: vizinhoValido
+
+    Verifica se a casa N+1 a ser visitada pelo cavalo é válida.
+
+	Parâmetros:
+		atual - Número da casa N.
+		proximo - Número da casa N+1.
+
+	Retorno: 
+		True se o vizinho é válido e False caso não.
+*/
+bool vizinhoValido(int atual, int proximo){
 	int X = 0, Y = 0, proximoX = 0, proximoY = 0, validoX = 0, validoY = 0;
-	coordenadas(anterior, &X, &Y);
-	coordenadas(atual, &proximoX, &proximoY);
+	coordenadas(atual, &X, &Y);
+	coordenadas(proximo, &proximoX, &proximoY);
 
 	validoX = abs(proximoX - X);
 	validoY = abs(proximoY - Y);
@@ -65,6 +152,18 @@ bool vizinhoValido(int anterior, int atual){
 	return (validoX == 1 && validoY == 2) || (validoX == 2 && validoY == 1);
 }
 
+/* Função: fitness
+
+    O fitness é calculado como sendo a maior sequência de
+	movimentos válidos feitos pelo cavalo. A posição i
+	em que a maior sequência se inicia é guardada.
+
+	Parâmetros:
+		copia - Indivíduo da população.
+
+	Retorno: 
+		Indivíduo com valor de fitness correspondente.
+*/
 POPULACAO fitness(POPULACAO copia)
 {	
 	POPULACAO individuo = copia;
@@ -92,6 +191,17 @@ POPULACAO fitness(POPULACAO copia)
 	return individuo;
 }
 
+/* Função: inicializa
+
+    Inicializa a população de indivíduos com número aleatórios de 1 a N
+	e calcula o seu fitness.
+
+	Parâmetros:
+		populacao - População de indivíduos.
+
+	Retorno: 
+		Nulo.
+*/
 void inicializa(POPULACAO populacao[INDIVIDUOS])
 {
 	for(int i = 0; i < INDIVIDUOS; i++){
@@ -110,19 +220,32 @@ void inicializa(POPULACAO populacao[INDIVIDUOS])
 	}
 }
 
+/* Função: correcao
+
+    Remove os números repetidos do percurso do cavalo e
+	os substitui pelas casas não visitadas.
+
+	Parâmetros:
+		filho - Indivíduo da população.
+
+	Retorno: 
+		Indivíduo com o tour corrigido.
+*/
 POPULACAO correcao(POPULACAO filho){
 	POPULACAO corrigido = filho;
 	int sequencia[TABULEIRO+1] = {0};
 
-	// Removemos os número repetidos
+	// Marcamos no vetor sequencia os números repetidos.
 	for(int i = 0; i < TABULEIRO; i++){
 		int aux = corrigido.tour[i];
-		if(sequencia[aux] > 1)
+		if(sequencia[aux] >= 1)
 			corrigido.tour[i] = 0;
 		else
 			sequencia[aux] +=1;
 	}
 
+	// Removemos os números repetidos e os substituímos por
+	// aqueles que não apareceram no percurso do cavalo.
 	for(int i = 0; i < TABULEIRO; i++){
 		if(corrigido.tour[i] == 0){
 			for(int j = 1; j <= TABULEIRO; j++){
@@ -138,6 +261,17 @@ POPULACAO correcao(POPULACAO filho){
 	return corrigido;
 }
 
+/* Função: mutacao
+
+    Altera o gene - número de casa do percurso do cavalo - de filho (cópia), 
+	sendo que a preferência é para vizinhos válidos.
+
+	Parâmetros:
+		filho - Indivíduo da população.
+
+	Retorno: 
+		Indivíduo com o percurso alterado.
+*/
 POPULACAO mutacao(POPULACAO filho){ 
 	POPULACAO individuo = filho;
 
@@ -154,13 +288,26 @@ POPULACAO mutacao(POPULACAO filho){
 				int temp = individuo.tour[posicao];
 				individuo.tour[posicao] = individuo.tour[i];
 				individuo.tour[i] = temp;
+				break;
 			}
 		}
 	}
 	return individuo;
 }
 
-//Reprodução por ponto duplo heurístico
+/* Função: recombinacaoDoisPontos
+
+    Dado os genes do pai e da mãe realiza a recombinação a
+	partir de dois pontos de corte favoráveis. Em outras palavras,
+	a maior sequência válida do percurso é mantida.
+
+	Parâmetros:
+		pai - Indivíduo da população.
+		mae - Indivíduo da população.
+
+	Retorno: 
+		Filho resultante da recombinação.
+*/
 POPULACAO recombinacaoDoisPontos(POPULACAO pai, POPULACAO mae){
 	POPULACAO filho, melhor, pior;
 
@@ -185,24 +332,92 @@ POPULACAO recombinacaoDoisPontos(POPULACAO pai, POPULACAO mae){
 	return filho;
 }
 
+/* Função: comparação
+
+    Usada para execução do qsort, esta função recebe dois INDIVIDUOS
+	e os compara determinando qual deles possui maior fitness.
+
+	Parâmetros:
+		A - indivíduo.
+		B - indivíduo.
+		
+	Retorno: 
+		Se A é menor que B, ou o contrário.
+*/
+int comparacao(const void* A, const void* B){
+	POPULACAO C = *(POPULACAO*)A;
+	POPULACAO D = *(POPULACAO*)B;
+	if(C.fitness < D.fitness) return 1;
+	else return -1;
+}
+
+/* Função: elitismo
+
+    Calcula o número de indivíduos da população que
+	não sofreram a ação dos operadores recombinação e mutação
+	na função reproducao. Em seguida chama a função de ordenação
+	qsort, os indivíduos mais adaptados ocupam as posições iniciais.
+
+	Parâmetros:
+		populacao - População de indivíduos.
+		
+	Retorno: 
+		Número de indivíduos selecionados.
+*/
+int elitismo(POPULACAO populacao[INDIVIDUOS]){
+	int selecionados = INDIVIDUOS*ELITISMO/100;
+	qsort(populacao, INDIVIDUOS, sizeof(populacao[0]), comparacao);
+	return selecionados;
+}
+
+/* Função: selecaoPorTorneio
+
+    Enquanto o torneio entre N indivíduos não terminar
+	seleciona dois a dois e determina qual deles
+	possui o maior fitness.
+
+	Parâmetros:
+		populacao - população de indivíduos (frases cópias).
+		
+	Retorno: 
+		O indivíduo com maior fitness obtido pelo torneio.
+*/
 POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
 	POPULACAO melhor;
 	melhor.fitness = -1;
 
 	for(int i = 1; i < TORNEIO; i++){
 		POPULACAO aux = populacao[gerarNumAleatorio(INDIVIDUOS-1)];
-		if(melhor.fitness == -1 || aux.fitness < melhor.fitness){
+		if(melhor.fitness == -1 || aux.fitness > melhor.fitness){
 			melhor = aux;
 		}
 	}
 	return melhor;
 }
 
-POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS]){
+/* Função: reproducao
+
+	Aplica as funções de elitismo, torneio, recombinação, mutação,
+	retornando uma nova população.
+
+	Parâmetros:
+		populacao - População de indivíduos.
+		geracoes - Número de gerações executadas.
+
+	Retorno: 
+		Melhor indivíduo da população.
+*/
+POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS], int geracoes){
 	POPULACAO novaPopulacao[INDIVIDUOS], melhor, pai, mae, filho;
 	melhor.fitness = -1;
+	int taxaDeElitismo = 0;
 
-	for(int i = 0; i < INDIVIDUOS; i++){
+	if(geracoes >= GERACOES/2){
+		taxaDeElitismo = elitismo(populacao);
+		melhor = populacao[0];
+	}
+
+	for(int i = taxaDeElitismo; i < INDIVIDUOS; i++){
 		pai = selecaoPorTorneio(populacao);
 		mae = selecaoPorTorneio(populacao);
 
@@ -217,14 +432,22 @@ POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS]){
 		novaPopulacao[i] = filho;
 	}
 
-	for(int i = 0; i < INDIVIDUOS; i++)
+	for(int i = taxaDeElitismo; i < INDIVIDUOS; i++)
 		populacao[i] = novaPopulacao[i];
 
 	return melhor;
 }
 
+/* Função: main
+
+	Implementa o Algoritmo Evolutivo para o Problema do Percurso do Cavalo.
+*/
 int main(void)
 {
+	clock_t inicio, fim;
+	double total = 0;
+	inicio = clock();
+
 	POPULACAO populacao[INDIVIDUOS], melhor;
 	int geracao = 0;
 
@@ -232,10 +455,15 @@ int main(void)
 	inicializa(populacao);
 	
 	do{
-		melhor = reproducao(populacao);
+		melhor = reproducao(populacao, geracao);
 		printf("\nIteracao %d, melhor fitness %d.\n", geracao, melhor.fitness);
 		geracao++;
 	}while(geracao <= GERACOES);
+
+	fim = clock();
+	total = (double)(fim-inicio)/CLOCKS_PER_SEC;
+	printf("Tempo total gasto pela CPU: %lf\n", total);
+	escreveRelatorio(total,melhor.fitness);
 	
 	return 0;
 }
