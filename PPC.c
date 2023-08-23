@@ -6,18 +6,18 @@
 #include <stdbool.h>
 #include <math.h>
 
-#define TABULEIRO 25
+#define TABULEIRO 16
 typedef struct{
 	int fitness;
 	int indiceMaiorSeq;
 	int tour[TABULEIRO];
-}POPULACAO;
+}INDIVIDUO;
 
 #define TORNEIO 3
 #define MUTACAO 15
 #define ELITISMO 10
 #define GERACOES 50
-#define INDIVIDUOS 100
+#define POPULACAO 100
 
 /* Função: escreveRelatorio
 
@@ -111,7 +111,7 @@ bool posicaoValida(int X, int Y){
 	Retorno: 
 		True se a sequência é válida e False caso não.
 */
-bool sequenciaValida(POPULACAO copia){
+bool sequenciaValida(INDIVIDUO copia){
 	int vertices = 0, X = 0, Y = 0;
 	bool visitadas[TABULEIRO+1] = {false};
 
@@ -164,9 +164,9 @@ bool vizinhoValido(int atual, int proximo){
 	Retorno: 
 		Indivíduo com valor de fitness correspondente.
 */
-POPULACAO fitness(POPULACAO copia)
+INDIVIDUO fitness(INDIVIDUO copia)
 {	
-	POPULACAO individuo = copia;
+	INDIVIDUO individuo = copia;
 	if(!sequenciaValida(copia)){
 		individuo.fitness = 0;
 		return individuo;
@@ -202,14 +202,14 @@ POPULACAO fitness(POPULACAO copia)
 	Retorno: 
 		Nulo.
 */
-void inicializa(POPULACAO populacao[INDIVIDUOS])
+void inicializa(INDIVIDUO populacao[POPULACAO])
 {
-	for(int i = 0; i < INDIVIDUOS; i++){
+	for(int i = 0; i < POPULACAO; i++){
 		for(int j = 0; j < TABULEIRO; j++)
 			populacao[i].tour[j] = j+1;
 	}
 	
-	for(int i = 0; i < INDIVIDUOS; i++){
+	for(int i = 0; i < POPULACAO; i++){
 		for(int j = 0; j < TABULEIRO; j++){
 			int pos = gerarNumAleatorio(TABULEIRO);
 			int temp = populacao[i].tour[j];
@@ -231,8 +231,8 @@ void inicializa(POPULACAO populacao[INDIVIDUOS])
 	Retorno: 
 		Indivíduo com o tour corrigido.
 */
-POPULACAO correcao(POPULACAO filho){
-	POPULACAO corrigido = filho;
+INDIVIDUO correcao(INDIVIDUO filho){
+	INDIVIDUO corrigido = filho;
 	int sequencia[TABULEIRO+1] = {0};
 
 	// Marcamos no vetor sequencia os números repetidos.
@@ -272,8 +272,8 @@ POPULACAO correcao(POPULACAO filho){
 	Retorno: 
 		Indivíduo com o percurso alterado.
 */
-POPULACAO mutacao(POPULACAO filho){ 
-	POPULACAO individuo = filho;
+INDIVIDUO mutacao(INDIVIDUO filho){ 
+	INDIVIDUO individuo = filho;
 
 	int r = gerarNumAleatorio(100);
 	int posicao = gerarNumAleatorio(TABULEIRO);
@@ -308,8 +308,8 @@ POPULACAO mutacao(POPULACAO filho){
 	Retorno: 
 		Filho resultante da recombinação.
 */
-POPULACAO recombinacaoDoisPontos(POPULACAO pai, POPULACAO mae){
-	POPULACAO filho, melhor, pior;
+INDIVIDUO recombinacaoDoisPontos(INDIVIDUO pai, INDIVIDUO mae){
+	INDIVIDUO filho, melhor, pior;
 
 	if(pai.fitness > mae.fitness){ 
 		melhor = pai;
@@ -334,7 +334,7 @@ POPULACAO recombinacaoDoisPontos(POPULACAO pai, POPULACAO mae){
 
 /* Função: comparação
 
-    Usada para execução do qsort, esta função recebe dois INDIVIDUOS
+    Usada para execução do qsort, esta função recebe dois POPULACAO
 	e os compara determinando qual deles possui maior fitness.
 
 	Parâmetros:
@@ -345,8 +345,8 @@ POPULACAO recombinacaoDoisPontos(POPULACAO pai, POPULACAO mae){
 		Se A é menor que B, ou o contrário.
 */
 int comparacao(const void* A, const void* B){
-	POPULACAO C = *(POPULACAO*)A;
-	POPULACAO D = *(POPULACAO*)B;
+	INDIVIDUO C = *(INDIVIDUO*)A;
+	INDIVIDUO D = *(INDIVIDUO*)B;
 	if(C.fitness < D.fitness) return 1;
 	else return -1;
 }
@@ -364,9 +364,9 @@ int comparacao(const void* A, const void* B){
 	Retorno: 
 		Número de indivíduos selecionados.
 */
-int elitismo(POPULACAO populacao[INDIVIDUOS]){
-	int selecionados = INDIVIDUOS*ELITISMO/100;
-	qsort(populacao, INDIVIDUOS, sizeof(populacao[0]), comparacao);
+int elitismo(INDIVIDUO populacao[POPULACAO]){
+	int selecionados = POPULACAO*ELITISMO/100;
+	qsort(populacao, POPULACAO, sizeof(populacao[0]), comparacao);
 	return selecionados;
 }
 
@@ -382,12 +382,12 @@ int elitismo(POPULACAO populacao[INDIVIDUOS]){
 	Retorno: 
 		O indivíduo com maior fitness obtido pelo torneio.
 */
-POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
-	POPULACAO melhor;
+INDIVIDUO selecaoPorTorneio(INDIVIDUO populacao[POPULACAO]){
+	INDIVIDUO melhor;
 	melhor.fitness = -1;
 
 	for(int i = 1; i < TORNEIO; i++){
-		POPULACAO aux = populacao[gerarNumAleatorio(INDIVIDUOS-1)];
+		INDIVIDUO aux = populacao[gerarNumAleatorio(POPULACAO-1)];
 		if(melhor.fitness == -1 || aux.fitness > melhor.fitness){
 			melhor = aux;
 		}
@@ -407,8 +407,8 @@ POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
 	Retorno: 
 		Melhor indivíduo da população.
 */
-POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS], int geracoes){
-	POPULACAO novaPopulacao[INDIVIDUOS], melhor, pai, mae, filho;
+INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
+	INDIVIDUO novaPopulacao[POPULACAO], melhor, pai, mae, filho;
 	melhor.fitness = -1;
 	int taxaDeElitismo = 0;
 
@@ -417,7 +417,7 @@ POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS], int geracoes){
 		melhor = populacao[0];
 	}
 
-	for(int i = taxaDeElitismo; i < INDIVIDUOS; i++){
+	for(int i = taxaDeElitismo; i < POPULACAO; i++){
 		pai = selecaoPorTorneio(populacao);
 		mae = selecaoPorTorneio(populacao);
 
@@ -432,7 +432,7 @@ POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS], int geracoes){
 		novaPopulacao[i] = filho;
 	}
 
-	for(int i = taxaDeElitismo; i < INDIVIDUOS; i++)
+	for(int i = taxaDeElitismo; i < POPULACAO; i++)
 		populacao[i] = novaPopulacao[i];
 
 	return melhor;
@@ -448,7 +448,7 @@ int main(void)
 	double total = 0;
 	inicio = clock();
 
-	POPULACAO populacao[INDIVIDUOS], melhor;
+	INDIVIDUO populacao[POPULACAO], melhor;
 	int geracao = 0;
 
 	srand(time(NULL));

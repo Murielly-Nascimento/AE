@@ -9,13 +9,13 @@
 typedef struct{
 	int fitness;
 	char frase[TAMANHO];
-}POPULACAO;
+}INDIVIDUO;
 
 #define TORNEIO 3
 #define MUTACAO	15
 #define ELITISMO 10
 #define GERACOES 280
-#define INDIVIDUOS 300
+#define POPULACAO 300
 
 /* Função: escreveRelatorio
 
@@ -76,7 +76,7 @@ int gerarNumAleatorio(int n)
 	Retorno: 
 		Um número inteiro que representa o fitness do indivíduo.
 */
-int fitness(POPULACAO copia, const char *alvo)
+int fitness(INDIVIDUO copia, const char *alvo)
 {
 	int qtdDistintos = 0;
 
@@ -94,18 +94,18 @@ int fitness(POPULACAO copia, const char *alvo)
 	são aqueles contidos na frase alvo.
 
 	Parâmetros:
-		população - sequência do tipo POPULACAO de tamanho INDIVIDUOS.
+		população - sequência do tipo INDIVIDUO de tamanho INDIVIDUO.
 		alvo - Sequência de caracteres da frase alvo.
 		
 	Retorno: 
 		Nulo.
 */
-void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
+void inicializa(INDIVIDUO populacao[POPULACAO], const char *alvo)
 {
 	const char alfabeto[] = "OTjEgPvtqltAemoridnaus,\n.  ";
 
 	int i = 0, j = 0;
-	for (i = 0; i < INDIVIDUOS; i++){
+	for (i = 0; i < POPULACAO; i++){
 		for(j = 0; j < TAMANHO-1; j++)
 			populacao[i].frase[j] = alfabeto[gerarNumAleatorio(LETRAS)];
 		populacao[i].frase[j] = '\0';
@@ -124,8 +124,8 @@ void inicializa(POPULACAO populacao[INDIVIDUOS], const char *alvo)
 	Retorno: 
 		O indivíduo da população após ser mutado.
 */
-POPULACAO mutacao(POPULACAO filho){ 
-	POPULACAO individuo = filho;
+INDIVIDUO mutacao(INDIVIDUO filho){ 
+	INDIVIDUO individuo = filho;
 	const char alfabeto[] = "OTjEgPvtqltAemoridnaus,\n.  ";
 
 	int r = gerarNumAleatorio(100);
@@ -150,8 +150,8 @@ POPULACAO mutacao(POPULACAO filho){
 	Retorno: 
 		O indivíduo filho resultante da combinação do pai e mãe.
 */
-POPULACAO recombinacaoUniforme(POPULACAO pai, POPULACAO mae){
-	POPULACAO filho;
+INDIVIDUO recombinacaoUniforme(INDIVIDUO pai, INDIVIDUO mae){
+	INDIVIDUO filho;
 
 	for(int i = 0; i < TAMANHO; i++){
 		if(gerarNumAleatorio(2) == 1)
@@ -174,12 +174,12 @@ POPULACAO recombinacaoUniforme(POPULACAO pai, POPULACAO mae){
 	Retorno: 
 		O indivíduo com menor fitness ontido pelo torneio.
 */
-POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
-	POPULACAO melhor;
+INDIVIDUO selecaoPorTorneio(INDIVIDUO populacao[POPULACAO]){
+	INDIVIDUO melhor;
 	melhor.fitness = -1;
 
 	for(int i = 1; i < TORNEIO; i++){
-		POPULACAO aux = populacao[gerarNumAleatorio(INDIVIDUOS-1)];
+		INDIVIDUO aux = populacao[gerarNumAleatorio(POPULACAO-1)];
 		if(melhor.fitness == -1 || aux.fitness < melhor.fitness){
 			melhor = aux;
 		}
@@ -189,7 +189,7 @@ POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
 
 /* Função: comparação
 
-    Usada para execução do qsort, esta função recebe dois INDIVIDUOS
+    Usada para execução do qsort, esta função recebe dois INDIVIDUO
 	e os compara determinando qual deles possui menor fitness.
 
 	Parâmetros:
@@ -200,8 +200,8 @@ POPULACAO selecaoPorTorneio(POPULACAO populacao[INDIVIDUOS]){
 		Se A é maior que B, ou o contrário.
 */
 int comparacao(const void* A, const void* B){
-	POPULACAO C = *(POPULACAO*)A;
-	POPULACAO D = *(POPULACAO*)B;
+	INDIVIDUO C = *(INDIVIDUO*)A;
+	INDIVIDUO D = *(INDIVIDUO*)B;
 	if(C.fitness > D.fitness) return 1;
 	else return -1;
 }
@@ -219,9 +219,9 @@ int comparacao(const void* A, const void* B){
 	Retorno: 
 		Número de indivíduos selecionados.
 */
-int elitismo(POPULACAO populacao[INDIVIDUOS]){
-	int selecionados = INDIVIDUOS*ELITISMO/100;
-	qsort(populacao, INDIVIDUOS, sizeof(populacao[0]), comparacao);
+int elitismo(INDIVIDUO populacao[POPULACAO]){
+	int selecionados = POPULACAO*ELITISMO/100;
+	qsort(populacao, POPULACAO, sizeof(populacao[0]), comparacao);
 	return selecionados;
 }
 
@@ -238,9 +238,9 @@ int elitismo(POPULACAO populacao[INDIVIDUOS]){
 	Retorno: 
 		Melhor indivíduo da população.
 */
-POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo, int geracoes)
+INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO],const char* alvo, int geracoes)
 {
-	POPULACAO novaPopulacao[INDIVIDUOS], melhor, pai, mae, filho;
+	INDIVIDUO novaPopulacao[POPULACAO], melhor, pai, mae, filho;
 	melhor.fitness=RAND_MAX;
 	int taxaDeElitismo = 0;
 
@@ -249,7 +249,7 @@ POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo, int gerac
 		melhor = populacao[0];
 	}
 
-	for(int i = taxaDeElitismo; i < INDIVIDUOS; i++){
+	for(int i = taxaDeElitismo; i < POPULACAO; i++){
 		pai = selecaoPorTorneio(populacao);
 		mae = selecaoPorTorneio(populacao);
 
@@ -263,7 +263,7 @@ POPULACAO reproducao(POPULACAO populacao[INDIVIDUOS],const char* alvo, int gerac
 		novaPopulacao[i] = filho;
 	}
 
-	for(int i = taxaDeElitismo; i < INDIVIDUOS; i++)
+	for(int i = taxaDeElitismo; i < POPULACAO; i++)
 		populacao[i] = novaPopulacao[i];
 
 	return melhor;
@@ -283,7 +283,7 @@ int main(void)
 	const char alvo[] = "O Tejo tem grandes navios.\nE navega nele ainda,\nPara aqueles que veem em tudo o que la nao esta,\nA memoria das naus.";
 	
 	int geracao = 0;
-	POPULACAO populacao[INDIVIDUOS], melhor;
+	INDIVIDUO populacao[POPULACAO], melhor;
 
 	srand(time(NULL));
 	inicializa(populacao, alvo);
