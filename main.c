@@ -4,7 +4,7 @@
 #include <time.h>
 #include <conio.h>
 
-#define LETRAS 28
+#define LETRAS 55
 #define TAMANHO	117
 typedef struct{
 	int fitness;
@@ -15,7 +15,7 @@ typedef struct{
 #define MUTACAO	15
 #define ELITISMO 10
 #define GERACOES 280
-#define POPULACAO 300
+#define POPULACAO 400
 
 /* Função: escreveRelatorio
 
@@ -133,7 +133,7 @@ INDIVIDUO mutacao(INDIVIDUO filho){
 
 	if(r <= MUTACAO)
 		individuo.frase[posicao] = alfabeto[gerarNumAleatorio(LETRAS)];
-		//individuo.frase[posicao] = alvo[posicao];
+		
 
 	return individuo;
 }
