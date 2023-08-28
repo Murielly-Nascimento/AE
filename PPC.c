@@ -274,15 +274,34 @@ INDIVIDUO correcao(INDIVIDUO filho){
 */
 INDIVIDUO mutacao(INDIVIDUO filho){ 
 	INDIVIDUO individuo = filho;
-
-	int r = gerarNumAleatorio(100);
-	int posicao = gerarNumAleatorio(TABULEIRO);
+	int r = 0, casa = 0, posicao = 0;
 	
+	r = gerarNumAleatorio(100);
+		
 	// Este é um operador de mutação baseada no vizinho válido.
 	// Em outras palavras, selecionamos uma posição aleatoriamente.
 	// Encontramos um vizinho válido da sequência e realizamos a troca.
 	if(r <= MUTACAO){
-		int casa = individuo.tour[posicao-1];
+		/*int possivelCasa = individuo.indiceMaiorSeq + individuo.fitness;
+		int j = 0;
+
+		if(possivelCasa < TABULEIRO-1){
+			casa = individuo.tour[possivelCasa];
+			j = 1;
+		}else{
+			possivelCasa = individuo.indiceMaiorSeq;
+			casa = individuo.tour[possivelCasa];
+			j = -1;
+		}*/
+
+
+		// Não faz sentido mutar uma casa cujo vizinho já é válido!
+		// Por isso buscamos uma casa com vizinho inválido.
+		do{
+			posicao = gerarNumAleatorio(TABULEIRO);
+			casa = individuo.tour[posicao-1];
+		}while(vizinhoValido(casa, individuo.tour[posicao]));
+
 		for(int i = 0; i < TABULEIRO; i++){
 			if(vizinhoValido(casa, individuo.tour[i])){
 				int temp = individuo.tour[posicao];
@@ -311,7 +330,14 @@ INDIVIDUO mutacao(INDIVIDUO filho){
 INDIVIDUO recombinacaoDoisPontos(INDIVIDUO pai, INDIVIDUO mae){
 	INDIVIDUO filho, melhor, pior;
 
-	if(pai.fitness > mae.fitness){ 
+	for(int i = 0; i < TABULEIRO; i++){
+		if(gerarNumAleatorio(2) == 1)
+			filho.tour[i] = pai.tour[i];
+		else
+			filho.tour[i] = mae.tour[i];
+	}
+
+	/*if(pai.fitness > mae.fitness){ 
 		melhor = pai;
 		pior = mae;
 	}
@@ -329,6 +355,8 @@ INDIVIDUO recombinacaoDoisPontos(INDIVIDUO pai, INDIVIDUO mae){
 		else
 			filho.tour[i] = pior.tour[i];
 	}
+	filho.fitness = melhor.fitness;
+	filho.indiceMaiorSeq = melhor.indiceMaiorSeq;*/
 	return filho;
 }
 
