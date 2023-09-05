@@ -177,12 +177,16 @@ INDIVIDUO fitness(INDIVIDUO copia)
 		if(vizinhoValido(copia.tour[i], copia.tour[i+1])){
 			contador++;
 			if(contador > maiorSequencia){
+				if(maiorSequencia == 0){
+					indiceMaiorSeq = i; 
+				}
+				else 
+					indiceMaiorSeq = indice;
 				maiorSequencia = contador;
-				indiceMaiorSeq = indice;
 			}
 		}else{
 			contador = 0;
-			indice = i+1; 
+			indice = i; 
 		}
 	}
 	individuo.fitness = maiorSequencia;
@@ -272,42 +276,56 @@ INDIVIDUO correcao(INDIVIDUO filho){
 	Retorno: 
 		Indivíduo com o percurso alterado.
 */
-INDIVIDUO mutacao(INDIVIDUO filho){ 
+/*INDIVIDUO mutacao(INDIVIDUO filho){ 
 	INDIVIDUO individuo = filho;
-	int r = 0, casa = 0, posicao = 0;
 	
-	r = gerarNumAleatorio(100);
+	int r = gerarNumAleatorio(100);
+	int posicao = gerarNumAleatorio(TABULEIRO);
+	int casa = individuo.tour[posicao-1];
 		
-	// Este é um operador de mutação baseada no vizinho válido.
-	// Em outras palavras, selecionamos uma posição aleatoriamente.
-	// Encontramos um vizinho válido da sequência e realizamos a troca.
 	if(r <= MUTACAO){
-		/*int possivelCasa = individuo.indiceMaiorSeq + individuo.fitness;
-		int j = 0;
-
-		if(possivelCasa < TABULEIRO-1){
-			casa = individuo.tour[possivelCasa];
-			j = 1;
-		}else{
-			possivelCasa = individuo.indiceMaiorSeq;
-			casa = individuo.tour[possivelCasa];
-			j = -1;
-		}*/
-
-
-		// Não faz sentido mutar uma casa cujo vizinho já é válido!
-		// Por isso buscamos uma casa com vizinho inválido.
-		do{
-			posicao = gerarNumAleatorio(TABULEIRO);
-			casa = individuo.tour[posicao-1];
-		}while(vizinhoValido(casa, individuo.tour[posicao]));
-
+		// Este é um operador de mutação baseada no vizinho válido.
+		// Em outras palavras, selecionamos uma posição aleatoriamente.
+		// Encontramos um vizinho válido da sequência e realizamos a troca.
 		for(int i = 0; i < TABULEIRO; i++){
 			if(vizinhoValido(casa, individuo.tour[i])){
 				int temp = individuo.tour[posicao];
 				individuo.tour[posicao] = individuo.tour[i];
 				individuo.tour[i] = temp;
 				break;
+			}
+		}
+	}
+	return individuo;
+}*/
+
+INDIVIDUO mutacao(INDIVIDUO filho){ 
+	INDIVIDUO individuo = filho;
+	
+	int r = gerarNumAleatorio(100);
+	int posicao = gerarNumAleatorio(TABULEIRO);
+	int casa = individuo.tour[posicao-1];
+		
+	if(r <= MUTACAO){
+		int aux = individuo.indiceMaiorSeq + individuo.fitness;
+		if (aux < TABULEIRO-1){
+			for(int i = 0; i < TABULEIRO; i++){
+				if(vizinhoValido(individuo.tour[aux], individuo.tour[i])){
+					int temp = individuo.tour[aux+1];
+					individuo.tour[aux+1] = individuo.tour[i];
+					individuo.tour[i] = temp;
+					break;
+				}
+			}
+		}else{
+			aux = individuo.indiceMaiorSeq;
+			for(int i = 0; i < TABULEIRO; i++){
+				if(vizinhoValido(individuo.tour[aux], individuo.tour[i])){
+					int temp = individuo.tour[aux-1];
+					individuo.tour[aux-1] = individuo.tour[i];
+					individuo.tour[i] = temp;
+					break;
+				}
 			}
 		}
 	}
@@ -330,14 +348,7 @@ INDIVIDUO mutacao(INDIVIDUO filho){
 INDIVIDUO recombinacaoDoisPontos(INDIVIDUO pai, INDIVIDUO mae){
 	INDIVIDUO filho, melhor, pior;
 
-	for(int i = 0; i < TABULEIRO; i++){
-		if(gerarNumAleatorio(2) == 1)
-			filho.tour[i] = pai.tour[i];
-		else
-			filho.tour[i] = mae.tour[i];
-	}
-
-	/*if(pai.fitness > mae.fitness){ 
+	if(pai.fitness > mae.fitness){ 
 		melhor = pai;
 		pior = mae;
 	}
@@ -355,10 +366,20 @@ INDIVIDUO recombinacaoDoisPontos(INDIVIDUO pai, INDIVIDUO mae){
 		else
 			filho.tour[i] = pior.tour[i];
 	}
-	filho.fitness = melhor.fitness;
-	filho.indiceMaiorSeq = melhor.indiceMaiorSeq;*/
 	return filho;
 }
+/*INDIVIDUO recombinacaoDoisPontos(INDIVIDUO pai, INDIVIDUO mae){
+	INDIVIDUO filho;
+
+	for(int i = 0; i < TABULEIRO; i++){
+		if(gerarNumAleatorio(2) == 1)
+			filho.tour[i] = pai.tour[i];
+		else
+			filho.tour[i] = mae.tour[i];
+	}
+
+	return filho;
+}*/
 
 /* Função: comparação
 
@@ -450,8 +471,9 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
 		mae = selecaoPorTorneio(populacao);
 
 		filho = recombinacaoDoisPontos(pai, mae);
-		filho = mutacao(filho);
 		filho = correcao(filho);
+		filho = fitness(filho);
+		filho = mutacao(filho);
 		filho = fitness(filho);
 
 		if(filho.fitness > melhor.fitness) 
