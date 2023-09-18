@@ -4,21 +4,21 @@
 #include <time.h>
 #include <conio.h>
 
-#define TAMANHO	100
+#define TAMANHO	400
 typedef struct{
-	int fitness;
-	char frase[TAMANHO];
+	int fitness; // Número de caracteres distintos entre a frase alvo e a frase cópia (quanto menor melhor).
+	char frase[TAMANHO]; // Frase cópia.
 }INDIVIDUO;
 
 typedef struct{
-	char *fraseAlvo;
-	char *alfabeto;
-	int tamFraseAlvo;
-	int populacao;
-	int geracoes;
-	int elitismo;
-	int mutacao;
-	int torneio;
+	char *fraseAlvo; // Frase alvo determinada pelo usuário
+	char alfabeto[100]; // Caracteres presentes na frase alvo
+	int qtdLetras; // Quantidade de caracteres distintos presentes na frase alvo
+	int populacao; // Tamanho da população
+	int geracoes; // Número de gerações
+	int elitismo; // Taxa de elitismo (1 a 100)
+	int mutacao; // Taxa de mutação (1 a 100)
+	int torneio; // Número de participantes da seleção por torneio
 }PARAMETROS;
 
 /* Função: escreveArquivo
@@ -34,15 +34,15 @@ void escreveArquivo(){
 		return;
 	}
 	
-	int populacao = 400, geracoes = 100, mutacao = 15, elitismo = 10, torneio = 3;
-	char fraseAlvo[] = {"o tejo guarda grandes navios"};
+	int populacao = 400, geracoes = 280, mutacao = 15, elitismo = 10, torneio = 3;
+	char fraseAlvo[] = {"O Tejo tem grandes navios,E nele navega ainda,Para aqueles que veem em tudo o que la nao esta,A memoria das naus.O Tejo desce de Espanha,E o Tejo entra no mar em Portugal.Toda a gente sabe isso.Mas poucos sabem qual e o rio da minha aldeia,E para onde ele vai,E donde ele vem.E por isso, porque pertence a menos gente,E mais livre e maior o rio da minha aldeia."};
 	
 	fwrite(&populacao, sizeof(int), 1, arq);
 	fwrite(&geracoes, sizeof(int), 1, arq);
 	fwrite(&mutacao, sizeof(int), 1, arq);
 	fwrite(&elitismo, sizeof(int), 1, arq);
 	fwrite(&torneio, sizeof(int), 1, arq);
-	fwrite(fraseAlvo, sizeof(char), 29, arq);
+	fwrite(fraseAlvo, sizeof(char), strlen(fraseAlvo), arq);
 	
 	fclose(arq);
 	
@@ -63,17 +63,25 @@ void escreveArquivo(){
 		Nulo.
 */
 void escreveRelatorio(double tempo, int fitness){
-	FILE *arq;
+	FILE *arq, *binario;
 	arq = fopen("relatorio.txt", "a");
+	binario = fopen("metricas.in", "ab");
 
-	if(arq == NULL){
+	if(arq == NULL || binario == NULL){
 		printf("Problemas na criação do arquivo\n");
 		return;
 	}
+	
+	//Gravando os dados no arquivo usando a função fwrite
+  	fwrite (&tempo, sizeof(double), 1, binario);
+  	fwrite (&fitness, sizeof(int), 1, binario); 
+
 	int result = fprintf(arq, "%.3lf&%d\n",tempo,fitness);
 	if(result == EOF)
 		printf("Erro na gravação\n");
+	
 	fclose(arq);
+	fclose(binario);
 }
 
 /* Função: leArquivo
@@ -160,7 +168,7 @@ int fitness(INDIVIDUO copia, PARAMETROS parametros)
 {
 	int qtdDistintos = 0;
 
-	for (int i = 0; i < parametros.tamFraseAlvo; i++){
+	for (int i = 0; i < strlen(parametros.fraseAlvo); i++){
 		if(copia.frase[i] != parametros.fraseAlvo[i])
 			qtdDistintos++;
 	}
@@ -183,8 +191,8 @@ INDIVIDUO mutacao(INDIVIDUO filho, PARAMETROS parametros){
 	INDIVIDUO individuo = filho;
 
 	int r = gerarNumAleatorio(100);
-	int posicao = gerarNumAleatorio(parametros.tamFraseAlvo);
-	int letras = strlen(parametros.alfabeto);
+	int posicao = gerarNumAleatorio(strlen(parametros.fraseAlvo));
+	int letras = parametros.qtdLetras;
 
 	if(r <= parametros.mutacao)
 		individuo.frase[posicao] = parametros.alfabeto[gerarNumAleatorio(letras)];
@@ -312,7 +320,7 @@ INDIVIDUO reproducao(INDIVIDUO *populacao, PARAMETROS parametros, int geracoes)
 		pai = selecaoPorTorneio(populacao, parametros);
 		mae = selecaoPorTorneio(populacao, parametros);
 
-		filho = recombinacaoUniforme(pai, mae, parametros.tamFraseAlvo);
+		filho = recombinacaoUniforme(pai, mae, strlen(parametros.fraseAlvo));
 		filho = mutacao(filho, parametros);
 		filho.fitness = fitness(filho,parametros);
 
@@ -346,9 +354,9 @@ INDIVIDUO reproducao(INDIVIDUO *populacao, PARAMETROS parametros, int geracoes)
 */
 void inicializa(INDIVIDUO *populacao, PARAMETROS parametros)
 {
-	int i = 0, j = 0, letras = strlen(parametros.alfabeto);
+	int i = 0, j = 0, letras = parametros.qtdLetras;
 	for (i = 0; i < parametros.populacao; i++){
-		for(j = 0; j < parametros.tamFraseAlvo; j++)
+		for(j = 0; j < strlen(parametros.fraseAlvo); j++)
 			populacao[i].frase[j] = parametros.alfabeto[gerarNumAleatorio(letras)];
 		populacao[i].frase[j] = '\0';
 		populacao[i].fitness = fitness(populacao[i], parametros);
@@ -398,14 +406,12 @@ PARAMETROS alfabeto(PARAMETROS parametros)
 			j++;
 		}
 	}
-
-	// Alocamos dinâmicamente o vetor com os caracteres pertecentes a frase alvo.
-	parametros.alfabeto = (char*)malloc(sizeof(char)*j);
 	
 	// Atríbuimos o vetor alfabeto (sem caracteres repetidos) ao parâmetro alfabeto.
 	for(int i = 0; i <= j; i++){
 		parametros.alfabeto[i] = alfabeto[i];
 	}
+	parametros.qtdLetras = j;
 
 	return parametros;
 }
@@ -422,9 +428,8 @@ PARAMETROS alfabeto(PARAMETROS parametros)
 		Nulo.
 */
 void liberaMemoria(INDIVIDUO* populacao, PARAMETROS parametros){
-	free(parametros.alfabeto);
-	free(parametros.fraseAlvo);
 	free(populacao);
+	free(parametros.fraseAlvo);
 }
 
 /* Função: main
