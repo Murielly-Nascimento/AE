@@ -4,15 +4,16 @@
 #include <time.h>
 #include <conio.h>
 
-#define TAMANHO	400
+#define TAMANHO	800
 typedef struct{
 	int fitness; // Número de caracteres distintos entre a frase alvo e a frase cópia (quanto menor melhor).
 	char frase[TAMANHO]; // Frase cópia.
 }INDIVIDUO;
 
+#define LETRAS 100
 typedef struct{
 	char *fraseAlvo; // Frase alvo determinada pelo usuário
-	char alfabeto[100]; // Caracteres presentes na frase alvo
+	char alfabeto[LETRAS]; // Caracteres presentes na frase alvo
 	int qtdLetras; // Quantidade de caracteres distintos presentes na frase alvo
 	int populacao; // Tamanho da população
 	int geracoes; // Número de gerações
@@ -34,9 +35,8 @@ void escreveArquivo(){
 		return;
 	}
 	
-	int populacao = 400, geracoes = 280, mutacao = 15, elitismo = 10, torneio = 3;
-	char fraseAlvo[] = {"O Tejo tem grandes navios,E nele navega ainda,Para aqueles que veem em tudo o que la nao esta,A memoria das naus.O Tejo desce de Espanha,E o Tejo entra no mar em Portugal.Toda a gente sabe isso.Mas poucos sabem qual e o rio da minha aldeia,E para onde ele vai,E donde ele vem.E por isso, porque pertence a menos gente,E mais livre e maior o rio da minha aldeia."};
-	
+	int populacao = 450, geracoes = 340, mutacao = 15, elitismo = 20, torneio = 4;
+	char fraseAlvo[] = {"O Tejo e mais belo que o rio que corre pela minha aldeia,Mas o Tejo nao e mais belo que o rio que corre pela minha aldeia.Porque o Tejo nao e o rio que corre pela minha aldeia,O Tejo tem grandes navios.E navega nele ainda,Para aqueles que vêem em tudo o que la nao esta,A memoria das naus.O Tejo desce de Espanha.E o Tejo entra no mar em Portugal.Toda a gente sabe isso.Mas poucos sabem qual e o rio da minha aldeia.E para onde ele vai.E donde ele vem.E por isso, porque pertence a menos gente,E mais livre e maior o rio da minha aldeia.Pelo Tejo vai-se para o Mundo.Para alem do Tejo ha a America.E a fortuna daqueles que a encontram.Ninguem nunca pensou no que ha para alem.Do rio da minha aldeia.O rio da minha aldeia nao faz pensar em nada.Quem esta ao pe dele esta so ao pe dele."};
 	fwrite(&populacao, sizeof(int), 1, arq);
 	fwrite(&geracoes, sizeof(int), 1, arq);
 	fwrite(&mutacao, sizeof(int), 1, arq);
@@ -392,7 +392,7 @@ int comparacaoCaracteres(const void* A, const void* B){
 */
 PARAMETROS alfabeto(PARAMETROS parametros)
 {
-	char frase[TAMANHO] = {'\0'}, alfabeto[30] = {'\0'};
+	char frase[TAMANHO] = {'\0'}, alfabeto[LETRAS] = {'\0'};
 	int j = 0;
 	strcpy(frase, parametros.fraseAlvo);
 	qsort(frase, strlen(frase), sizeof(char), comparacaoCaracteres);
@@ -401,7 +401,7 @@ PARAMETROS alfabeto(PARAMETROS parametros)
 	for(int i = 0; i < strlen(frase); i++){
 		if(frase[i] == '\0') 
 			break;
-		else if(frase[i] != frase[i+1]){
+		else if(frase[i] != frase[i+1] && frase[i] > 0){
 			alfabeto[j] = frase[i];
 			j++;
 		}
