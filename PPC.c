@@ -16,8 +16,8 @@ typedef struct{
 #define TORNEIO 3
 #define MUTACAO 15
 #define ELITISMO 10
-#define GERACOES 50
-#define POPULACAO 100
+#define GERACOES 100
+#define POPULACAO 50
 
 /* Função: escreveRelatorio
 
@@ -33,17 +33,24 @@ typedef struct{
 		Nulo.
 */
 void escreveRelatorio(double tempo, int fitness){
-	FILE *arq;
+	FILE *arq, *binario;
 	arq = fopen("resultados.txt", "a");
+	binario = fopen("metricasPPC.in", "ab");
 
-	if(arq == NULL){
+	if(arq == NULL || binario == NULL){
 		printf("Problemas na criação do arquivo\n");
 		return;
 	}
+
+	//Gravando os dados no arquivo usando a função fwrite
+  	fwrite (&tempo, sizeof(double), 1, binario);
+  	fwrite (&fitness, sizeof(int), 1, binario);
+
 	int result = fprintf(arq, "%.3lf&%d\n",tempo,fitness);
 	if(result == EOF)
 		printf("Erro na gravação\n");
 	fclose(arq);
+	fclose(binario);
 }
 
 /* Função: gerarNumAleatorio
@@ -100,34 +107,97 @@ bool posicaoValida(int X, int Y){
 	return (X >= 0 && X < TABULEIRO && Y >= 0 && Y < TABULEIRO);
 }
 
-/* Função: sequenciaValida
+/* Função: movimentosPossiveis
 
-    Verifica se o percurso do cavalo é válido e
-	se não vistou a mesma casa mais de uma vez.
+    Dado as coordenadas X e Y calcula o número
+	de movimentos possíveis a partir dessa posição.
 
 	Parâmetros:
-		copia - Indivíduo pertecente a população.
+		X - coordenada no eixo das abscissas.
+		Y - coordenada no eixo das ordenadas.
 
 	Retorno: 
-		True se a sequência é válida e False caso não.
+		contador - número de movimentos possíveis.
 */
-bool sequenciaValida(INDIVIDUO copia){
+int movimentosPossiveis(int X, int Y) {
+	// Define os movimentos possíveis do cavalo
+	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
+	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
+	int contador = 0;
+
+    for (int i = 0; i < 8; i++) {
+        int proximoX = X + eixoX[i];
+        int proximoY = Y + eixoY[i];
+        if (posicaoValida(proximoX, proximoY)) 
+            contador++;
+    }
+
+    return contador;
+}
+
+/* Função: proximoMovimento
+
+    Dado as coordenadas X e Y encontra as
+	próximas coordenadas com o menor número 
+	de movimentos possíveis.
+
+	Parâmetros:
+		X - coordenada no eixo das abscissas.
+		Y - coordenada no eixo das ordenadas.
+
+	Retorno: 
+		NULO.
+*/
+void proximoMovimento(int X, int Y, int *proximoX, int *proximoY) {
+	// Define os movimentos possíveis do cavalo
+	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
+	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
+	// Inicializado com um valor acima do possível (8).
+	int minMovimentos = 9; 
+
+    for (int i = 0; i < 8; i++) {
+        int auxX = X + eixoX[i];
+        int auxY = Y + eixoY[i];
+        if (posicaoValida(auxX, auxY)) {
+            int movimentos = movimentosPossiveis(auxX, auxY);
+            if (movimentos < minMovimentos){
+                minMovimentos = movimentos;
+                *proximoX = auxX;
+                *proximoY = auxY;
+            }
+        }
+    }
+}
+
+/* Função: sequenciaValida
+
+    Verifica se o percurso do indivíduo cópia
+	é válido. Caso não seja, a casa inválida é 
+	substituída por uma válida com o menor
+	número de movimentos possíveis.
+
+	Parâmetros:
+		copia - INDIVÍDUO.
+
+	Retorno: 
+		void.
+*/
+void sequenciaValida(INDIVIDUO copia){
 	int vertices = 0, X = 0, Y = 0;
 	bool visitadas[TABULEIRO+1] = {false};
+	int proximoX = 0, proximoY = 0;
 
 	for (int i = 0; i < TABULEIRO; i++){
 		coordenadas(copia.tour[i], &X, &Y);
-		if(!posicaoValida(X,Y))
-			return false;	
-		else{
-			if(visitadas[copia.tour[i]])
-				return false;
-			else
-				visitadas[copia.tour[i]] = true;
+		if(!posicaoValida(X,Y) || visitadas[copia.tour[i]]){
+			coordenadas(copia.tour[i-1], &X, &Y);
+			proximoMovimento(X, Y, &proximoX, &proximoY);
+			int valor = (proximoY - 1) * 8 + proximoX;
+			copia.tour[i] = valor;
 		}
+		else
+			visitadas[copia.tour[i]] = true;
 	}
-
-	return true;
 }
 
 /* Função: vizinhoValido
@@ -166,33 +236,27 @@ bool vizinhoValido(int atual, int proximo){
 */
 INDIVIDUO fitness(INDIVIDUO copia)
 {	
-	INDIVIDUO individuo = copia;
-	if(!sequenciaValida(copia)){
-		individuo.fitness = 0;
-		return individuo;
-	}
-
+	sequenciaValida(copia);
 	int contador = 0, maiorSequencia = 0, indiceMaiorSeq = 0, indice = 0;
 	for(int i = 0; i < TABULEIRO; i++){
 		if(vizinhoValido(copia.tour[i], copia.tour[i+1])){
 			contador++;
+			if(contador == 1) 
+				indice = i;
+		}
+		else{
 			if(contador > maiorSequencia){
-				if(maiorSequencia == 0){
-					indiceMaiorSeq = i; 
-				}
-				else 
-					indiceMaiorSeq = indice;
 				maiorSequencia = contador;
+				indiceMaiorSeq = indice;
 			}
-		}else{
 			contador = 0;
 			indice = i; 
 		}
 	}
-	individuo.fitness = maiorSequencia;
-	individuo.indiceMaiorSeq = indiceMaiorSeq;
+	copia.fitness = maiorSequencia;
+	copia.indiceMaiorSeq = indiceMaiorSeq;
 
-	return individuo;
+	return copia;
 }
 
 /* Função: inicializa
@@ -224,47 +288,6 @@ void inicializa(INDIVIDUO populacao[POPULACAO])
 	}
 }
 
-/* Função: correcao
-
-    Remove os números repetidos do percurso do cavalo e
-	os substitui pelas casas não visitadas.
-
-	Parâmetros:
-		filho - Indivíduo da população.
-
-	Retorno: 
-		Indivíduo com o tour corrigido.
-*/
-INDIVIDUO correcao(INDIVIDUO filho){
-	INDIVIDUO corrigido = filho;
-	int sequencia[TABULEIRO+1] = {0};
-
-	// Marcamos no vetor sequencia os números repetidos.
-	for(int i = 0; i < TABULEIRO; i++){
-		int aux = corrigido.tour[i];
-		if(sequencia[aux] >= 1)
-			corrigido.tour[i] = 0;
-		else
-			sequencia[aux] +=1;
-	}
-
-	// Removemos os números repetidos e os substituímos por
-	// aqueles que não apareceram no percurso do cavalo.
-	for(int i = 0; i < TABULEIRO; i++){
-		if(corrigido.tour[i] == 0){
-			for(int j = 1; j <= TABULEIRO; j++){
-				if(sequencia[j] == 0){
-					corrigido.tour[i] = j;
-					sequencia[j] +=1;
-					break;
-				}
-			}
-		}
-	}
-
-	return corrigido;
-}
-
 /* Função: mutacao
 
     Altera o gene - número de casa do percurso do cavalo - de filho (cópia), 
@@ -276,99 +299,33 @@ INDIVIDUO correcao(INDIVIDUO filho){
 	Retorno: 
 		Indivíduo com o percurso alterado.
 */
-/*INDIVIDUO mutacao(INDIVIDUO filho){ 
-	INDIVIDUO individuo = filho;
-	
-	int r = gerarNumAleatorio(100);
-	int posicao = gerarNumAleatorio(TABULEIRO);
-	int casa = individuo.tour[posicao-1];
-		
-	if(r <= MUTACAO){
-		// Este é um operador de mutação baseada no vizinho válido.
-		// Em outras palavras, selecionamos uma posição aleatoriamente.
-		// Encontramos um vizinho válido da sequência e realizamos a troca.
-		for(int i = 0; i < TABULEIRO; i++){
-			if(vizinhoValido(casa, individuo.tour[i])){
-				int temp = individuo.tour[posicao];
-				individuo.tour[posicao] = individuo.tour[i];
-				individuo.tour[i] = temp;
-				break;
-			}
-		}
-	}
-	return individuo;
-}*/
-
 INDIVIDUO mutacao(INDIVIDUO filho){ 
 	INDIVIDUO individuo = filho;
 	
-	int r = gerarNumAleatorio(100);
-	int posicao = gerarNumAleatorio(TABULEIRO);
-	int casa = individuo.tour[posicao-1];
-		
+	int r = gerarNumAleatorio(100);	
 	if(r <= MUTACAO){
-		int aux = individuo.indiceMaiorSeq + individuo.fitness;
-		if (aux < TABULEIRO-1){
-			for(int i = 0; i < TABULEIRO; i++){
-				if(vizinhoValido(individuo.tour[aux], individuo.tour[i])){
-					int temp = individuo.tour[aux+1];
-					individuo.tour[aux+1] = individuo.tour[i];
-					individuo.tour[i] = temp;
-					break;
-				}
-			}
-		}else{
-			aux = individuo.indiceMaiorSeq;
-			for(int i = 0; i < TABULEIRO; i++){
-				if(vizinhoValido(individuo.tour[aux], individuo.tour[i])){
-					int temp = individuo.tour[aux-1];
-					individuo.tour[aux-1] = individuo.tour[i];
-					individuo.tour[i] = temp;
-					break;
-				}
-			}
-		}
+		int A = rand() % TABULEIRO + 1;
+		int B = rand() % TABULEIRO + 1;
+		int C = individuo.tour[A];
+		individuo.tour[A] = individuo.tour[B];
+		individuo.tour[B] = C;
 	}
 	return individuo;
 }
 
-/* Função: recombinacaoDoisPontos
+/* Função: recombinacaoUniforme
 
-    Dado os genes do pai e da mãe realiza a recombinação a
-	partir de dois pontos de corte favoráveis. Em outras palavras,
-	a maior sequência válida do percurso é mantida.
+    Combina aleatóriamente os genes (número de casas) do percurso do pai e mãe
+	no filho.
 
 	Parâmetros:
-		pai - Indivíduo da população.
-		mae - Indivíduo da população.
-
+		pai - Um dos indivíduos da população.
+		mae - Um dos indivíduos da população.
+		
 	Retorno: 
-		Filho resultante da recombinação.
+		O indivíduo filho resultante da combinação do pai e mãe.
 */
-INDIVIDUO recombinacaoDoisPontos(INDIVIDUO pai, INDIVIDUO mae){
-	INDIVIDUO filho, melhor, pior;
-
-	if(pai.fitness > mae.fitness){ 
-		melhor = pai;
-		pior = mae;
-	}
-	else{ 
-		melhor = mae;
-		pior = pai;
-	}
-
-	int corteInicial = melhor.indiceMaiorSeq;
-	int corteFinal = melhor.indiceMaiorSeq + melhor.fitness;
-
-	for(int i = 0; i < TABULEIRO; i++){
-		if(i >= corteInicial && i <= corteFinal)
-			filho.tour[i] = melhor.tour[i];
-		else
-			filho.tour[i] = pior.tour[i];
-	}
-	return filho;
-}
-/*INDIVIDUO recombinacaoDoisPontos(INDIVIDUO pai, INDIVIDUO mae){
+INDIVIDUO recombinacaoUniforme(INDIVIDUO pai, INDIVIDUO mae){
 	INDIVIDUO filho;
 
 	for(int i = 0; i < TABULEIRO; i++){
@@ -379,7 +336,7 @@ INDIVIDUO recombinacaoDoisPontos(INDIVIDUO pai, INDIVIDUO mae){
 	}
 
 	return filho;
-}*/
+}
 
 /* Função: comparação
 
@@ -470,9 +427,7 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
 		pai = selecaoPorTorneio(populacao);
 		mae = selecaoPorTorneio(populacao);
 
-		filho = recombinacaoDoisPontos(pai, mae);
-		filho = correcao(filho);
-		filho = fitness(filho);
+		filho = recombinacaoUniforme(pai, mae);
 		filho = mutacao(filho);
 		filho = fitness(filho);
 
