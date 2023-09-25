@@ -35,7 +35,7 @@ void escreveArquivo(){
 		return;
 	}
 	
-	int populacao = 450, geracoes = 340, mutacao = 15, elitismo = 20, torneio = 4;
+	int populacao = 400, geracoes = 2400, mutacao = 30, elitismo = 10, torneio = 3;
 	char fraseAlvo[] = {"O Tejo e mais belo que o rio que corre pela minha aldeia,Mas o Tejo nao e mais belo que o rio que corre pela minha aldeia.Porque o Tejo nao e o rio que corre pela minha aldeia,O Tejo tem grandes navios.E navega nele ainda,Para aqueles que vêem em tudo o que la nao esta,A memoria das naus.O Tejo desce de Espanha.E o Tejo entra no mar em Portugal.Toda a gente sabe isso.Mas poucos sabem qual e o rio da minha aldeia.E para onde ele vai.E donde ele vem.E por isso, porque pertence a menos gente,E mais livre e maior o rio da minha aldeia.Pelo Tejo vai-se para o Mundo.Para alem do Tejo ha a America.E a fortuna daqueles que a encontram.Ninguem nunca pensou no que ha para alem.Do rio da minha aldeia.O rio da minha aldeia nao faz pensar em nada.Quem esta ao pe dele esta so ao pe dele."};
 	fwrite(&populacao, sizeof(int), 1, arq);
 	fwrite(&geracoes, sizeof(int), 1, arq);

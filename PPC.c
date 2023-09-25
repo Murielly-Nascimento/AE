@@ -16,7 +16,7 @@ typedef struct{
 #define TORNEIO 3
 #define MUTACAO 15
 #define ELITISMO 10
-#define GERACOES 100
+#define GERACOES 400
 #define POPULACAO 50
 
 /* Função: escreveRelatorio
