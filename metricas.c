@@ -3,7 +3,7 @@
 
 int main(void){
 
-	FILE *binario = fopen("metricas.in", "rb");
+	FILE *binario = fopen("metricasPPC.in", "rb");
 
 	if(binario == NULL){
 		printf("Erro ao abrir arquivo.\n");

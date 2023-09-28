@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <math.h>
 
-#define TABULEIRO 16
+#define TABULEIRO 900 // Tabuleiro 30x30
 typedef struct{
 	int fitness;
 	int indiceMaiorSeq;
@@ -14,10 +14,10 @@ typedef struct{
 }INDIVIDUO;
 
 #define TORNEIO 3
-#define MUTACAO 15
-#define ELITISMO 10
-#define GERACOES 400
-#define POPULACAO 50
+#define MUTACAO 30 
+#define ELITISMO 5
+#define GERACOES 1000
+#define POPULACAO 300
 
 /* Função: escreveRelatorio
 
