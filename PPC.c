@@ -83,7 +83,6 @@ int proximoMovimento(int X, int Y) {
 	// Define os movimentos possíveis do cavalo
 	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
 	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
-
 	// Inicializado com um valor acima do possível (8).
 	int minMovimentos = 9, valor = 0; 
 
@@ -114,27 +113,39 @@ bool vizinhoValido(int atual, int proximo){
 
 INDIVIDUO regraWandorsnoff(INDIVIDUO copia){
 	INDIVIDUO adaptado = copia;
-	int posicao[TABULEIRO + 1] = {false};
-	
-	for(int i = 0; i < TABULEIRO; i++)
-		posicao[copia.tour[i]] = i;
-
+	bool visitadas[TABULEIRO + 1] = {false}, flag = true;
+	visitadas[copia.tour[0]] = true;
 	
 	for(int i = 0; i < TABULEIRO-1; i++){
 		int casa = copia.tour[i];
 		int proximo = copia.tour[i+1];
 		
-		if(!vizinhoValido(casa, proximo)){
-			int X = 0, Y = 0;
-			coordenadas(casa, &X, &Y);
-			proximo = proximoMovimento(X, Y);
-			int aux = copia.tour[i+1], aux2 = posicao[proximo];
-			copia.tour[i+1] = proximo;
-			copia.tour[posicao[proximo]] = aux;
-			posicao[proximo] = i+1;
-			posicao[aux] = aux2;
-			
+		if(flag){
+			if(!vizinhoValido(casa, proximo)){
+				int X = 0, Y = 0;
+				coordenadas(casa, &X, &Y);
+				proximo = proximoMovimento(X, Y);
+
+				if(visitadas[proximo] == true){
+					flag = false;
+					continue;
+				}else{
+					visitadas[copia.tour[i+1]] = false;
+					visitadas[proximo] = true;
+					copia.tour[i+1] = proximo;
+				}
+				
+			}
+		}else if(visitadas[proximo]){
+			for(int j = 1; j <= TABULEIRO; j++){
+				if(visitadas[j] == false){
+					copia.tour[i+1] = j;
+					visitadas[j] = true;
+					break;
+				}
+			}
 		}
+
 	}
 	adaptado = copia;
 	return adaptado;
@@ -171,13 +182,13 @@ void inicializa(INDIVIDUO populacao[POPULACAO])
 		for(int j = 0; j < TABULEIRO; j++)
 			populacao[i].tour[j] = j+1;
 	}
-	/*
+	
 	for(int i = 0; i < POPULACAO; i++){
-		populacao[i] = adaptacao(populacao[i]);
+		populacao[i] = regraWandorsnoff(populacao[i]);
 		populacao[i] = fitness(populacao[i]);
-	}*/
+	}
 	
-	
+	/*
 	for(int i = 0; i < POPULACAO; i++){
 		for(int j = 0; j < TABULEIRO; j++){
 			int pos = gerarNumAleatorio(TABULEIRO);
@@ -186,7 +197,7 @@ void inicializa(INDIVIDUO populacao[POPULACAO])
 			populacao[i].tour[pos] = temp;
 		}
 		populacao[i] = fitness(populacao[i]);	
-	}
+	}*/
 }
 
 INDIVIDUO mutacao(INDIVIDUO filho){ 
