@@ -14,7 +14,7 @@ typedef struct{
 }INDIVIDUO;
 
 #define TORNEIO 3
-#define MUTACAO 25 
+#define MUTACAO 30 
 #define ELITISMO 5
 #define GERACOES 300
 #define POPULACAO 100
@@ -101,61 +101,6 @@ int proximoMovimento(int X, int Y) {
 	return valor;
 }
 
-INDIVIDUO correcao(INDIVIDUO copia){
-	INDIVIDUO adaptado;
-	int X = 0, Y = 0;
-	bool visitadas[TABULEIRO+1] = {false};
-
-	for (int i = 0; i < TABULEIRO; i++){
-		int casa = copia.tour[i];
-		coordenadas(casa, &X, &Y);
-
-		// Se essa casa já foi visitada
-		if(visitadas[casa]){
-			// Vamos calcular a próxima casa a partir da anterior
-			coordenadas(copia.tour[i-1], &X, &Y);
-			int valor = proximoMovimento(X, Y);
-			
-			// Se a próxima casa encontrada não for repetida
-			if(visitadas[valor] == false){
-				copia.tour[i] = valor;
-				visitadas[valor] = true;
-			}
-			
-			else{
-				for(int j = 1; j <= TABULEIRO; j++){
-					if(visitadas[j] == false){
-						copia.tour[i] = j;
-						visitadas[j] = true;
-						break;
-					}
-				}
-			}
-		}
-		else
-			visitadas[casa] = true;
-	}
-
-	adaptado = copia;
-
-	return adaptado; 
-}
-/*
-INDIVIDUO adaptacao(INDIVIDUO copia){
-	bool visitadas[TABULEIRO + 1] = {false};
-	
-	for(int i = 0; i < TABULEIRO; i++){
-		int casa = copia.tour[i];
-		int proximo = copia.tour[i+1];
-		
-		while(visitadas[casa] == true || !vizinhoValido(casa, proximo)){
-			int X = 0, Y = 0;
-			coordenadas(casa, &X, &Y);
-			casa = proximoMovimento(X, Y);
-		}
-	}
-}*/
-
 bool vizinhoValido(int atual, int proximo){
 	int X = 0, Y = 0, proximoX = 0, proximoY = 0, validoX = 0, validoY = 0;
 	coordenadas(atual, &X, &Y);
@@ -165,6 +110,34 @@ bool vizinhoValido(int atual, int proximo){
 	validoY = abs(proximoY - Y);
 
 	return (validoX == 1 && validoY == 2) || (validoX == 2 && validoY == 1);
+}
+
+INDIVIDUO regraWandorsnoff(INDIVIDUO copia){
+	INDIVIDUO adaptado = copia;
+	int posicao[TABULEIRO + 1] = {false};
+	
+	for(int i = 0; i < TABULEIRO; i++)
+		posicao[copia.tour[i]] = i;
+
+	
+	for(int i = 0; i < TABULEIRO-1; i++){
+		int casa = copia.tour[i];
+		int proximo = copia.tour[i+1];
+		
+		if(!vizinhoValido(casa, proximo)){
+			int X = 0, Y = 0;
+			coordenadas(casa, &X, &Y);
+			proximo = proximoMovimento(X, Y);
+			int aux = copia.tour[i+1], aux2 = posicao[proximo];
+			copia.tour[i+1] = proximo;
+			copia.tour[posicao[proximo]] = aux;
+			posicao[proximo] = i+1;
+			posicao[aux] = aux2;
+			
+		}
+	}
+	adaptado = copia;
+	return adaptado;
 }
 
 INDIVIDUO fitness(INDIVIDUO copia)
@@ -198,6 +171,12 @@ void inicializa(INDIVIDUO populacao[POPULACAO])
 		for(int j = 0; j < TABULEIRO; j++)
 			populacao[i].tour[j] = j+1;
 	}
+	/*
+	for(int i = 0; i < POPULACAO; i++){
+		populacao[i] = adaptacao(populacao[i]);
+		populacao[i] = fitness(populacao[i]);
+	}*/
+	
 	
 	for(int i = 0; i < POPULACAO; i++){
 		for(int j = 0; j < TABULEIRO; j++){
@@ -282,8 +261,8 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
 	melhor.fitness = -1;
 	int taxaDeElitismo = 0;
 
-	//Elitismo aplicado a 1/4 do número de gerações
-	if(geracoes >= (GERACOES - GERACOES * 0.25)){
+	//Elitismo aplicado a 1/3 do número de gerações
+	if(geracoes >= GERACOES/2){
 		taxaDeElitismo = elitismo(populacao);
 		melhor = populacao[0];
 	}
@@ -294,7 +273,7 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
 
 		filho = recombinacaoUniforme(pai, mae);
 		filho = mutacao(filho);
-		filho = correcao(filho);
+		//filho = adaptacao(filho);
 		filho = fitness(filho);
 
 		if(filho.fitness > melhor.fitness) 
