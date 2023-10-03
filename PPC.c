@@ -1,23 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <conio.h>
 #include <stdbool.h>
+#include <time.h>
 #include <math.h>
 
-#define TABULEIRO 25 // Tabuleiro 5x5
+#define TABULEIRO 25 
 typedef struct{
 	int fitness;
-	int indiceMaiorSeq;
 	int tour[TABULEIRO];
 }INDIVIDUO;
 
 #define TORNEIO 3
-#define MUTACAO 30 
+#define MUTACAO 5
 #define ELITISMO 5
-#define GERACOES 300
-#define POPULACAO 100
+#define GERACOES 500
+#define POPULACAO 50
 
 void escreveRelatorio(double tempo, int fitness){
 	FILE *arq, *binario;
@@ -52,52 +50,9 @@ void coordenadas(int numeroCasa, int *X, int *Y){
 	*Y = (numeroCasa-1)%N+1;
 }
 
-int numeroCasa(int X, int Y){
-	int N = sqrt(TABULEIRO);
-	int numeroCasa = (Y - 1) * N + X;
-	return numeroCasa; 
-}
-
 bool posicaoValida(int X, int Y){
 	int N = sqrt(TABULEIRO);
 	return (X >= 1 && X <= N && Y >= 1 && Y <= N);
-}
-
-int movimentosPossiveis(int X, int Y) {
-	// Define os movimentos possíveis do cavalo
-	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
-	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
-	int contador = 0;
-
-    for (int i = 0; i < 8; i++) {
-        int proximoX = X + eixoX[i];
-        int proximoY = Y + eixoY[i];
-        if (posicaoValida(proximoX, proximoY)) 
-            contador++;
-    }
-
-    return contador;
-}
-
-int proximoMovimento(int X, int Y) {
-	// Define os movimentos possíveis do cavalo
-	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
-	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
-	// Inicializado com um valor acima do possível (8).
-	int minMovimentos = 9, valor = 0; 
-
-    for (int i = 0; i < 8; i++) {
-        int auxX = X + eixoX[i];
-        int auxY = Y + eixoY[i];
-        if (posicaoValida(auxX, auxY)) {
-            int movimentos = movimentosPossiveis(auxX, auxY);
-            if (movimentos < minMovimentos){
-                minMovimentos = movimentos;
-				valor  = numeroCasa(auxX, auxY);
-            }
-        }
-    }
-	return valor;
 }
 
 bool vizinhoValido(int atual, int proximo){
@@ -111,68 +66,82 @@ bool vizinhoValido(int atual, int proximo){
 	return (validoX == 1 && validoY == 2) || (validoX == 2 && validoY == 1);
 }
 
-INDIVIDUO regraWandorsnoff(INDIVIDUO copia){
-	INDIVIDUO adaptado = copia;
-	bool visitadas[TABULEIRO + 1] = {false}, flag = true;
-	visitadas[copia.tour[0]] = true;
-	
-	for(int i = 0; i < TABULEIRO-1; i++){
-		int casa = copia.tour[i];
-		int proximo = copia.tour[i+1];
-		
-		if(flag){
-			if(!vizinhoValido(casa, proximo)){
-				int X = 0, Y = 0;
-				coordenadas(casa, &X, &Y);
-				proximo = proximoMovimento(X, Y);
-
-				if(visitadas[proximo] == true){
-					flag = false;
-					continue;
-				}else{
-					visitadas[copia.tour[i+1]] = false;
-					visitadas[proximo] = true;
-					copia.tour[i+1] = proximo;
-				}
-				
-			}
-		}else if(visitadas[proximo]){
-			for(int j = 1; j <= TABULEIRO; j++){
-				if(visitadas[j] == false){
-					copia.tour[i+1] = j;
-					visitadas[j] = true;
-					break;
-				}
-			}
-		}
-
-	}
-	adaptado = copia;
-	return adaptado;
+int numeroCasa(int X, int Y){
+	int N = sqrt(TABULEIRO);
+	int numeroCasa = (Y - 1) * N + X;
+	return numeroCasa; 
 }
 
-INDIVIDUO fitness(INDIVIDUO copia)
-{	
-	INDIVIDUO adaptado = copia;
-	int contador = 0, maiorSequencia = 0, indiceMaiorSeq = 0, indice = 0;
-	for(int i = 0; i < TABULEIRO; i++){
-		if(vizinhoValido(adaptado.tour[i], adaptado.tour[i+1])){
+int movimentosPossiveis(int X, int Y) {
+	// Define os movimentos possíveis do cavalo
+	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
+	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
+	int contador = 0;
+
+	for (int i = 0; i < 8; i++) {
+		int proximoX = X + eixoX[i];
+		int proximoY = Y + eixoY[i];
+		if (posicaoValida(proximoX, proximoY)) 
 			contador++;
-			if(contador == 1) 
-				indice = i;
-		}
-		else{
-			if(contador > maiorSequencia){
-				maiorSequencia = contador;
-				indiceMaiorSeq = indice;
-			}
-			contador = 0;
-			indice = i; 
+	}
+
+	return contador;
+}
+
+int proximoMovimento(int casa, bool visitadas[TABULEIRO+1]) {
+	int X = 0, Y = 0;
+	coordenadas(casa, &X, &Y);
+	// Define os movimentos possíveis do cavalo
+	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
+	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
+	// Inicializado com um valor acima do possível (8).
+	int minMovimentos = 9, valor = 0; 
+
+	for(int i = 0; i < 8; i++) {
+		int auxX = X + eixoX[i];
+		int auxY = Y + eixoY[i];
+		int aux = numeroCasa(auxX, auxY);
+		if (posicaoValida(auxX, auxY) && !visitadas[aux] && vizinhoValido(casa,aux)) {
+			valor = aux;
+			break;
+			//int movimentos = movimentosPossiveis(auxX, auxY);
+			/*if (movimentos < minMovimentos){
+				minMovimentos = movimentos;
+				valor  = aux;
+			}*/
 		}
 	}
-	adaptado.fitness = maiorSequencia;
-	adaptado.indiceMaiorSeq = indiceMaiorSeq;
+	return valor;
+}
 
+INDIVIDUO fitness(INDIVIDUO copia){
+	INDIVIDUO adaptado = copia;
+	bool visitadas[TABULEIRO+1] = {false};
+
+	int casa = adaptado.tour[0], contador = 0;
+	visitadas[casa] = true;
+
+	for(int i = 0; i < TABULEIRO-1; i++){
+		casa = adaptado.tour[i];
+		int proximo = adaptado.tour[i+1];
+
+		if(vizinhoValido(casa, proximo) && !visitadas[proximo]){
+			visitadas[proximo] = true;
+			contador++;
+		}
+		else{
+			proximo = proximoMovimento(casa, visitadas);
+
+			if(proximo == 0) 
+				break;
+
+			adaptado.tour[i+1] = proximo;
+			visitadas[proximo] = true;
+			contador++;
+		}
+	}
+	
+	adaptado.fitness = contador;
 	return adaptado;
 }
 
@@ -184,12 +153,6 @@ void inicializa(INDIVIDUO populacao[POPULACAO])
 	}
 	
 	for(int i = 0; i < POPULACAO; i++){
-		populacao[i] = regraWandorsnoff(populacao[i]);
-		populacao[i] = fitness(populacao[i]);
-	}
-	
-	/*
-	for(int i = 0; i < POPULACAO; i++){
 		for(int j = 0; j < TABULEIRO; j++){
 			int pos = gerarNumAleatorio(TABULEIRO);
 			int temp = populacao[i].tour[j];
@@ -197,7 +160,7 @@ void inicializa(INDIVIDUO populacao[POPULACAO])
 			populacao[i].tour[pos] = temp;
 		}
 		populacao[i] = fitness(populacao[i]);	
-	}*/
+	}
 }
 
 INDIVIDUO mutacao(INDIVIDUO filho){ 
@@ -217,24 +180,11 @@ INDIVIDUO mutacao(INDIVIDUO filho){
 INDIVIDUO recombinacaoUniforme(INDIVIDUO pai, INDIVIDUO mae){
 	INDIVIDUO filho;
 
-	bool visitadas[TABULEIRO+1] = {false};
 	for(int i = 0; i < TABULEIRO; i++){
 		if(gerarNumAleatorio(2) == 1)
 			filho.tour[i] = pai.tour[i];
 		else
 			filho.tour[i] = mae.tour[i];
-		
-		int casa = filho.tour[i];
-		if(visitadas[casa]){
-			for(int j = 1; j<= TABULEIRO; j++){
-				if(visitadas[j] == false){
-					filho.tour[i] = j;
-					visitadas[j] = true;
-					break;
-				}
-			}
-		}
-		visitadas[casa] = true;
 	}
 
 	return filho;
@@ -248,7 +198,6 @@ int comparacao(const void* A, const void* B){
 }
 
 int elitismo(INDIVIDUO populacao[POPULACAO]){
-	//Elitismo aplicado a 5% da população
 	int selecionados = POPULACAO*ELITISMO/100;
 	qsort(populacao, POPULACAO, sizeof(populacao[0]), comparacao);
 	return selecionados;
@@ -270,13 +219,9 @@ INDIVIDUO selecaoPorTorneio(INDIVIDUO populacao[POPULACAO]){
 INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
 	INDIVIDUO novaPopulacao[POPULACAO], melhor, pai, mae, filho;
 	melhor.fitness = -1;
-	int taxaDeElitismo = 0;
 
-	//Elitismo aplicado a 1/3 do número de gerações
-	if(geracoes >= GERACOES/2){
-		taxaDeElitismo = elitismo(populacao);
-		melhor = populacao[0];
-	}
+	int taxaDeElitismo = elitismo(populacao);
+	melhor = populacao[0];
 
 	for(int i = taxaDeElitismo; i < POPULACAO; i++){
 		pai = selecaoPorTorneio(populacao);
@@ -284,7 +229,6 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
 
 		filho = recombinacaoUniforme(pai, mae);
 		filho = mutacao(filho);
-		//filho = adaptacao(filho);
 		filho = fitness(filho);
 
 		if(filho.fitness > melhor.fitness) 
@@ -299,6 +243,17 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
 	return melhor;
 }
 
+void verifica(INDIVIDUO copia){
+	bool visitadas[TABULEIRO+1] = {false};
+
+	for(int i = 0; i < TABULEIRO; i++){
+		if(visitadas[copia.tour[i]] == true){
+			printf("");
+			return;
+		}
+		visitadas[copia.tour[i]] = true;
+	}
+}
 
 int main(void)
 {
@@ -306,7 +261,6 @@ int main(void)
 	double total = 0;
 	inicio = clock();
 
-	
 	INDIVIDUO populacao[POPULACAO], melhor;
 	int geracao = 0;
 
@@ -318,6 +272,7 @@ int main(void)
 		printf("\nIteracao %d, melhor fitness %d.\n", geracao, melhor.fitness);
 		geracao++;
 	}while(geracao <= GERACOES);
+	verifica(melhor);
 
 	fim = clock();
 	total = (double)(fim-inicio)/CLOCKS_PER_SEC;
