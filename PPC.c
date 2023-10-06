@@ -5,17 +5,18 @@
 #include <time.h>
 #include <math.h>
 
-#define TABULEIRO 25 
+#define TABULEIRO 100
 typedef struct{
 	int fitness;
 	int tour[TABULEIRO];
 }INDIVIDUO;
 
 #define TORNEIO 3
-#define MUTACAO 5
-#define ELITISMO 5
+#define MUTACAO 1
+#define ELITISMO 1
 #define GERACOES 500
-#define POPULACAO 50
+#define POPULACAO 200
+#define CRUZAMENTO 80
 
 void escreveRelatorio(double tempo, int fitness){
 	FILE *arq, *binario;
@@ -95,28 +96,30 @@ int proximoMovimento(int casa, bool visitadas[TABULEIRO+1]) {
 	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
 	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
 	// Inicializado com um valor acima do possível (8).
-	int minMovimentos = 9, valor = 0; 
+	int minMovimentos = 9, valor = 0, valorF = 0; 
 
 	for(int i = 0; i < 8; i++) {
 		int auxX = X + eixoX[i];
 		int auxY = Y + eixoY[i];
-		int aux = numeroCasa(auxX, auxY);
-		if (posicaoValida(auxX, auxY) && !visitadas[aux] && vizinhoValido(casa,aux)) {
+		int aux = (auxX - 1) * sqrt(TABULEIRO) + auxY;
+		if (posicaoValida(auxX, auxY) && !visitadas[aux] && vizinhoValido(casa,aux)){
 			valor = aux;
-			break;
-			//int movimentos = movimentosPossiveis(auxX, auxY);
-			/*if (movimentos < minMovimentos){
+			int movimentos = movimentosPossiveis(auxX, auxY);
+			if(movimentos < minMovimentos){
 				minMovimentos = movimentos;
-				valor  = aux;
-			}*/
+				valorF = valor;
+			}
 		}
 	}
-	return valor;
+
+	if(valorF == 0) valorF = valor;
+
+	return valorF;
 }
 
 INDIVIDUO fitness(INDIVIDUO copia){
 	INDIVIDUO adaptado = copia;
-	bool visitadas[TABULEIRO+1] = {false};
+	bool visitadas[TABULEIRO + 1] = {false};
 
 	int casa = adaptado.tour[0], contador = 0;
 	visitadas[casa] = true;
@@ -131,7 +134,6 @@ INDIVIDUO fitness(INDIVIDUO copia){
 		}
 		else{
 			proximo = proximoMovimento(casa, visitadas);
-
 			if(proximo == 0) 
 				break;
 
@@ -142,6 +144,7 @@ INDIVIDUO fitness(INDIVIDUO copia){
 	}
 	
 	adaptado.fitness = contador;
+
 	return adaptado;
 }
 
@@ -166,27 +169,44 @@ void inicializa(INDIVIDUO populacao[POPULACAO])
 INDIVIDUO mutacao(INDIVIDUO filho){ 
 	INDIVIDUO individuo = filho;
 	
-	int r = gerarNumAleatorio(100);	
-	if(r <= MUTACAO){
-		int A = rand() % TABULEIRO + 1;
-		int B = rand() % TABULEIRO + 1;
-		int C = individuo.tour[A];
-		individuo.tour[A] = individuo.tour[B];
-		individuo.tour[B] = C;
+	for(int i = 0; i < TABULEIRO; i++){
+		int r = gerarNumAleatorio(100);
+		if(r <= MUTACAO);
+			individuo.tour[i] = rand() % TABULEIRO + 1;
 	}
 	return individuo;
+}
+
+INDIVIDUO recombinacaoUmPonto(INDIVIDUO pai, INDIVIDUO mae){
+	INDIVIDUO filho;
+
+	int r = gerarNumAleatorio(100);
+	if(r <= CRUZAMENTO){
+		int pontoCruzamento = gerarNumAleatorio(TABULEIRO); 
+
+		for(int i = 0; i < TABULEIRO; i++){
+			if(i <= pontoCruzamento)
+				filho.tour[i] = pai.tour[i];
+			else
+				filho.tour[i] = mae.tour[i];
+		}
+	}else{
+		if(pai.fitness > mae.fitness) filho = pai;
+		else filho = mae;
+	}
+
+	return filho;
 }
 
 INDIVIDUO recombinacaoUniforme(INDIVIDUO pai, INDIVIDUO mae){
 	INDIVIDUO filho;
 
 	for(int i = 0; i < TABULEIRO; i++){
-		if(gerarNumAleatorio(2) == 1)
+		if(gerarNumAleatorio(2))
 			filho.tour[i] = pai.tour[i];
 		else
 			filho.tour[i] = mae.tour[i];
 	}
-
 	return filho;
 }
 
@@ -227,7 +247,8 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
 		pai = selecaoPorTorneio(populacao);
 		mae = selecaoPorTorneio(populacao);
 
-		filho = recombinacaoUniforme(pai, mae);
+		filho = recombinacaoUmPonto(pai, mae);
+		//filho = recombinacaoUniforme(pai,mae);
 		filho = mutacao(filho);
 		filho = fitness(filho);
 
@@ -248,7 +269,14 @@ void verifica(INDIVIDUO copia){
 
 	for(int i = 0; i < TABULEIRO; i++){
 		if(visitadas[copia.tour[i]] == true){
-			printf("");
+			printf("TTTTTTT");
+			return;
+		}
+		visitadas[copia.tour[i]] = true;
+	}
+	for(int i = 0; i < TABULEIRO-1; i++){
+		if(!vizinhoValido(copia.tour[i], copia.tour[i+1])){
+			printf("TTTTTTT");
 			return;
 		}
 		visitadas[copia.tour[i]] = true;
