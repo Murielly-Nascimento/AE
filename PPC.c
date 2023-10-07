@@ -5,7 +5,7 @@
 #include <time.h>
 #include <math.h>
 
-#define TABULEIRO 100
+#define TABULEIRO 400
 typedef struct{
 	int fitness;
 	int tour[TABULEIRO];
@@ -14,8 +14,8 @@ typedef struct{
 #define TORNEIO 3
 #define MUTACAO 1
 #define ELITISMO 1
-#define GERACOES 500
-#define POPULACAO 200
+#define GERACOES 800
+#define POPULACAO 400
 #define CRUZAMENTO 80
 
 void escreveRelatorio(double tempo, int fitness){
@@ -236,9 +236,8 @@ INDIVIDUO selecaoPorTorneio(INDIVIDUO populacao[POPULACAO]){
 	return melhor;
 }
 
-INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
+INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO]){
 	INDIVIDUO novaPopulacao[POPULACAO], melhor, pai, mae, filho;
-	melhor.fitness = -1;
 
 	int taxaDeElitismo = elitismo(populacao);
 	melhor = populacao[0];
@@ -248,13 +247,11 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO], int geracoes){
 		mae = selecaoPorTorneio(populacao);
 
 		filho = recombinacaoUmPonto(pai, mae);
-		//filho = recombinacaoUniforme(pai,mae);
-		filho = mutacao(filho);
+		filho = mutacao(filho);	
 		filho = fitness(filho);
 
 		if(filho.fitness > melhor.fitness) 
 			melhor = filho;
-	
 		novaPopulacao[i] = filho;
 	}
 
@@ -296,7 +293,7 @@ int main(void)
 	inicializa(populacao);
 
 	do{
-		melhor = reproducao(populacao, geracao);
+		melhor = reproducao(populacao);
 		printf("\nIteracao %d, melhor fitness %d.\n", geracao, melhor.fitness);
 		geracao++;
 	}while(geracao <= GERACOES);
