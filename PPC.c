@@ -11,12 +11,11 @@ typedef struct{
 	int tour[TABULEIRO];
 }INDIVIDUO;
 
-#define TORNEIO 3
-#define MUTACAO 1
-#define ELITISMO 1
-#define GERACOES 800
-#define POPULACAO 400
-#define CRUZAMENTO 80
+#define TORNEIO 4
+#define MUTACAO 15
+#define ELITISMO 10  
+#define GERACOES 10000
+#define POPULACAO 1000
 
 void escreveRelatorio(double tempo, int fitness){
 	FILE *arq, *binario;
@@ -148,7 +147,7 @@ INDIVIDUO fitness(INDIVIDUO copia){
 	return adaptado;
 }
 
-void inicializa(INDIVIDUO populacao[POPULACAO])
+void inicializa(INDIVIDUO *populacao)
 {
 	for(int i = 0; i < POPULACAO; i++){
 		for(int j = 0; j < TABULEIRO; j++)
@@ -169,33 +168,11 @@ void inicializa(INDIVIDUO populacao[POPULACAO])
 INDIVIDUO mutacao(INDIVIDUO filho){ 
 	INDIVIDUO individuo = filho;
 	
-	for(int i = 0; i < TABULEIRO; i++){
-		int r = gerarNumAleatorio(100);
-		if(r <= MUTACAO);
-			individuo.tour[i] = rand() % TABULEIRO + 1;
-	}
-	return individuo;
-}
-
-INDIVIDUO recombinacaoUmPonto(INDIVIDUO pai, INDIVIDUO mae){
-	INDIVIDUO filho;
-
 	int r = gerarNumAleatorio(100);
-	if(r <= CRUZAMENTO){
-		int pontoCruzamento = gerarNumAleatorio(TABULEIRO); 
+	if(r <= MUTACAO);
+		individuo.tour[gerarNumAleatorio(TABULEIRO)] = rand() % TABULEIRO + 1;
 
-		for(int i = 0; i < TABULEIRO; i++){
-			if(i <= pontoCruzamento)
-				filho.tour[i] = pai.tour[i];
-			else
-				filho.tour[i] = mae.tour[i];
-		}
-	}else{
-		if(pai.fitness > mae.fitness) filho = pai;
-		else filho = mae;
-	}
-
-	return filho;
+	return individuo;
 }
 
 INDIVIDUO recombinacaoUniforme(INDIVIDUO pai, INDIVIDUO mae){
@@ -217,13 +194,13 @@ int comparacao(const void* A, const void* B){
 	else return -1;
 }
 
-int elitismo(INDIVIDUO populacao[POPULACAO]){
+int elitismo(INDIVIDUO *populacao){
 	int selecionados = POPULACAO*ELITISMO/100;
 	qsort(populacao, POPULACAO, sizeof(populacao[0]), comparacao);
 	return selecionados;
 }
 
-INDIVIDUO selecaoPorTorneio(INDIVIDUO populacao[POPULACAO]){
+INDIVIDUO selecaoPorTorneio(INDIVIDUO *populacao){
 	INDIVIDUO melhor;
 	melhor.fitness = -1;
 
@@ -236,8 +213,9 @@ INDIVIDUO selecaoPorTorneio(INDIVIDUO populacao[POPULACAO]){
 	return melhor;
 }
 
-INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO]){
-	INDIVIDUO novaPopulacao[POPULACAO], melhor, pai, mae, filho;
+INDIVIDUO reproducao(INDIVIDUO *populacao){
+	INDIVIDUO *novaPopulacao, melhor, pai, mae, filho;
+	novaPopulacao = (INDIVIDUO *)malloc(POPULACAO * sizeof(INDIVIDUO));
 
 	int taxaDeElitismo = elitismo(populacao);
 	melhor = populacao[0];
@@ -246,7 +224,7 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO]){
 		pai = selecaoPorTorneio(populacao);
 		mae = selecaoPorTorneio(populacao);
 
-		filho = recombinacaoUmPonto(pai, mae);
+		filho = recombinacaoUniforme(pai, mae);
 		filho = mutacao(filho);	
 		filho = fitness(filho);
 
@@ -258,6 +236,7 @@ INDIVIDUO reproducao(INDIVIDUO populacao[POPULACAO]){
 	for(int i = taxaDeElitismo; i < POPULACAO; i++)
 		populacao[i] = novaPopulacao[i];
 
+	free(novaPopulacao);
 	return melhor;
 }
 
@@ -286,7 +265,8 @@ int main(void)
 	double total = 0;
 	inicio = clock();
 
-	INDIVIDUO populacao[POPULACAO], melhor;
+	INDIVIDUO *populacao, melhor;
+	populacao = (INDIVIDUO *)malloc(POPULACAO * sizeof(INDIVIDUO));
 	int geracao = 0;
 
 	srand(time(NULL));
@@ -297,12 +277,13 @@ int main(void)
 		printf("\nIteracao %d, melhor fitness %d.\n", geracao, melhor.fitness);
 		geracao++;
 	}while(geracao <= GERACOES);
-	verifica(melhor);
 
 	fim = clock();
 	total = (double)(fim-inicio)/CLOCKS_PER_SEC;
 	printf("Tempo total gasto pela CPU: %lf\n", total);
 	escreveRelatorio(total,melhor.fitness);
+	verifica(melhor);
+	free(populacao);
 	
 	return 0;
 }
