@@ -116,6 +116,7 @@ int proximoMovimento(int casa, bool visitadas[TABULEIRO+1]) {
 	return valorF;
 }
 
+
 INDIVIDUO fitness(INDIVIDUO copia){
 	INDIVIDUO adaptado = copia;
 	bool visitadas[TABULEIRO + 1] = {false};
@@ -150,13 +151,14 @@ INDIVIDUO fitness(INDIVIDUO copia){
 void inicializa(INDIVIDUO *populacao)
 {
 	for(int i = 0; i < POPULACAO; i++){
-		for(int j = 0; j < TABULEIRO; j++)
+		populacao[i].tour[0] = 1;
+		for(int j = 1; j < TABULEIRO; j++)
 			populacao[i].tour[j] = j+1;
 	}
 	
 	for(int i = 0; i < POPULACAO; i++){
-		for(int j = 0; j < TABULEIRO; j++){
-			int pos = gerarNumAleatorio(TABULEIRO);
+		for(int j = 1; j < TABULEIRO; j++){
+			int pos = (rand() % ((TABULEIRO-1) - 1 + 1)) + 1;
 			int temp = populacao[i].tour[j];
 			populacao[i].tour[j] = populacao[i].tour[pos];
 			populacao[i].tour[pos] = temp;
@@ -165,13 +167,42 @@ void inicializa(INDIVIDUO *populacao)
 	}
 }
 
+int vetorMovimentos(int casa) {
+	int X = 0, Y = 0;
+	coordenadas(casa, &X, &Y);
+
+	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
+	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
+	int minMovimentos = 9, movimentos[9] = {0}, j = 0; 
+
+	for(int i = 0; i < 8; i++) {
+		int auxX = X + eixoX[i];
+		int auxY = Y + eixoY[i];
+		int aux = (auxX - 1) * sqrt(TABULEIRO) + auxY;
+		if (posicaoValida(auxX, auxY) && vizinhoValido(casa,aux)){
+			movimentos[j] = aux;
+			j++;
+		}
+	}
+
+	
+	int valor =	movimentos[gerarNumAleatorio(j)];
+
+	return valor;
+}
+
+
 INDIVIDUO mutacao(INDIVIDUO filho){ 
 	INDIVIDUO individuo = filho;
 	
 	int r = gerarNumAleatorio(100);
-	if(r <= MUTACAO);
-		individuo.tour[gerarNumAleatorio(TABULEIRO)] = rand() % TABULEIRO + 1;
-
+	if(r <= MUTACAO){
+		int aux = 0;
+		do{
+			aux = gerarNumAleatorio(TABULEIRO);
+		}while(aux == 0 || aux == TABULEIRO-1);
+		individuo.tour[aux+1] = vetorMovimentos(individuo.tour[aux]);
+	}
 	return individuo;
 }
 
@@ -221,8 +252,10 @@ INDIVIDUO reproducao(INDIVIDUO *populacao){
 	melhor = populacao[0];
 
 	for(int i = taxaDeElitismo; i < POPULACAO; i++){
-		pai = selecaoPorTorneio(populacao);
-		mae = selecaoPorTorneio(populacao);
+		//pai = selecaoPorTorneio(populacao);
+		//mae = selecaoPorTorneio(populacao);
+		pai = populacao[i];
+		mae = populacao[POPULACAO-i];
 
 		filho = recombinacaoUniforme(pai, mae);
 		filho = mutacao(filho);	
@@ -276,6 +309,7 @@ int main(void)
 		melhor = reproducao(populacao);
 		printf("\nIteracao %d, melhor fitness %d.\n", geracao, melhor.fitness);
 		geracao++;
+		if(melhor.fitness == TABULEIRO-1) break;
 	}while(geracao <= GERACOES);
 
 	fim = clock();
