@@ -35,8 +35,12 @@ void escreveArquivo(){
 		return;
 	}
 	
-	int populacao = 400, geracoes = 2400, mutacao = 30, elitismo = 10/*ATENÇÃO MUDAR PARAQ 5*/, torneio = 3;
-	char fraseAlvo[] = {"O Tejo e mais belo que o rio que corre pela minha aldeia,Mas o Tejo nao e mais belo que o rio que corre pela minha aldeia.Porque o Tejo nao e o rio que corre pela minha aldeia,O Tejo tem grandes navios.E navega nele ainda,Para aqueles que vêem em tudo o que la nao esta,A memoria das naus.O Tejo desce de Espanha.E o Tejo entra no mar em Portugal.Toda a gente sabe isso.Mas poucos sabem qual e o rio da minha aldeia.E para onde ele vai.E donde ele vem.E por isso, porque pertence a menos gente,E mais livre e maior o rio da minha aldeia.Pelo Tejo vai-se para o Mundo.Para alem do Tejo ha a America.E a fortuna daqueles que a encontram.Ninguem nunca pensou no que ha para alem.Do rio da minha aldeia.O rio da minha aldeia nao faz pensar em nada.Quem esta ao pe dele esta so ao pe dele."};
+	int populacao = 900, geracoes = 1800, mutacao = 15, elitismo = 5, torneio = 3;
+	char fraseAlvo[] = {"O Tejo e mais belo que o rio que corre pela minha aldeia,Mas o Tejo nao e mais belo que o rio que corre pela minha aldeia.Porque o Tejo nao e o rio que corre pela minha aldeia,O Tejo tem grandes navios,E nele navega ainda,Para aqueles que veem em tudo o que la nao esta,A memoria das naus.O Tejo desce de Espanha,E o Tejo entra no mar em Portugal.Toda a gente sabe isso.Mas poucos sabem qual e o rio da minha aldeia,E para onde ele vai,E donde ele vem.E por isso, porque pertence a menos gente,e mais livre e maior o rio da minha aldeia.Pelo Tejo vai se para o Mundo.Para alem do Tejo ha a America.E a fortuna daqueles que a encontram.Ninguem nunca pensou no que ha para alem.Do rio da minha aldeia.O rio da minha aldeia nao faz pensar em nada.Quem esta ao pe dele esta so ao pe dele."};
+	//char fraseAlvo[] = {"o tejo guarda grandes navios"};
+	//char fraseAlvo[] = {"O Tejo tem grandes navios,E nele navega ainda,Para aqueles que veem em tudo o que la nao esta,A memoria das naus."};
+	//char fraseAlvo[] = {"O Tejo tem grandes navios,E nele navega ainda,Para aqueles que veem em tudo o que la nao esta,A memoria das naus.O Tejo desce de Espanha,E o Tejo entra no mar em Portugal.Toda a gente sabe isso.Mas poucos sabem qual e o rio da minha aldeia,E para onde ele vai,E donde ele vem.E por isso, porque pertence a menos gente,E mais livre e maior o rio da minha aldeia."};
+
 	fwrite(&populacao, sizeof(int), 1, arq);
 	fwrite(&geracoes, sizeof(int), 1, arq);
 	fwrite(&mutacao, sizeof(int), 1, arq);
@@ -306,15 +310,10 @@ int elitismo(INDIVIDUO *populacao, PARAMETROS parametros){
 INDIVIDUO reproducao(INDIVIDUO *populacao, PARAMETROS parametros, int geracoes)
 {
 	INDIVIDUO melhor, pai, mae, filho, *novaPopulacao;
-	melhor.fitness=RAND_MAX;
 	novaPopulacao = (INDIVIDUO *)malloc(parametros.populacao * sizeof(INDIVIDUO));
 
-	int taxaDeElitismo = 0;
-
-	if(geracoes >= parametros.geracoes/2){
-		taxaDeElitismo = elitismo(populacao, parametros);
-		melhor = populacao[0];
-	}
+	int taxaDeElitismo = elitismo(populacao, parametros);
+	melhor = populacao[0];
 
 	for(int i = taxaDeElitismo; i < parametros.populacao; i++){
 		pai = selecaoPorTorneio(populacao, parametros);

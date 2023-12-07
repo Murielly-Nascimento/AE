@@ -10,13 +10,15 @@ int main(void){
 		return 0;
 	}
 
-	int fitness[10] = {0}, i = 0, finalArquivo = 1;
-	double tempo = 0, mediaTempo = 0, mediaFitness = 0, desvioPadrao = 0;
+	int fitness[10] = {0}, i = 0, finalArquivo = 1, geracao = 0, mediaGeracao = 0, mediaFitness = 0;
+	double mediaTempo = 0, tempo = 0, desvioPadrao = 0;
 	
 	while(!feof(binario)){
+		fread(&geracao, sizeof(int), 1, binario);
 		fread(&tempo, sizeof(double), 1, binario);
 		fread(&fitness[i], sizeof(int), 1, binario);
 		
+		mediaGeracao += geracao;
 		mediaTempo += tempo;
 		mediaFitness += fitness[i];
 		i++;
@@ -24,6 +26,7 @@ int main(void){
 
 	mediaFitness = mediaFitness/10;
 	mediaTempo = mediaTempo/10;
+	mediaGeracao = mediaGeracao/10;
 
 	for(int i = 0; i < 10; i++){
 		desvioPadrao += pow(fitness[i] - mediaFitness, 2);

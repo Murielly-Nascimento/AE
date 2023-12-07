@@ -11,13 +11,13 @@ typedef struct{
 	int tour[TABULEIRO];
 }INDIVIDUO;
 
-#define TORNEIO 4
 #define MUTACAO 15
 #define ELITISMO 10  
 #define GERACOES 10000
 #define POPULACAO 1000
+#define TORNEIO 3
 
-void escreveRelatorio(double tempo, int fitness){
+void escreveRelatorio(double tempo, int fitness, int geracao){
 	FILE *arq, *binario;
 	arq = fopen("resultados.txt", "a");
 	binario = fopen("metricasPPC.in", "ab");
@@ -28,10 +28,11 @@ void escreveRelatorio(double tempo, int fitness){
 	}
 
 	//Gravando os dados no arquivo usando a função fwrite
+	fwrite (&geracao, sizeof(int), 1, binario);
   	fwrite (&tempo, sizeof(double), 1, binario);
   	fwrite (&fitness, sizeof(int), 1, binario);
-
-	int result = fprintf(arq, "%.3lf&%d\n",tempo,fitness);
+	
+	int result = fprintf(arq, "%d&%.3lf&%d\n",geracao, tempo, fitness);
 	if(result == EOF)
 		printf("Erro na gravação\n");
 	fclose(arq);
@@ -88,7 +89,7 @@ int movimentosPossiveis(int X, int Y) {
 	return contador;
 }
 
-int proximoMovimento(int casa, bool visitadas[TABULEIRO+1]) {
+int regraWarnsdorff(int casa, bool visitadas[TABULEIRO+1]){
 	int X = 0, Y = 0;
 	coordenadas(casa, &X, &Y);
 	// Define os movimentos possíveis do cavalo
@@ -116,6 +117,26 @@ int proximoMovimento(int casa, bool visitadas[TABULEIRO+1]) {
 	return valorF;
 }
 
+int proximoMovimento(int casa, bool visitadas[TABULEIRO+1]) {
+	int X = 0, Y = 0;
+	coordenadas(casa, &X, &Y);
+	// Define os movimentos possíveis do cavalo
+	int eixoX[] = {2, 1, -1, -2, -2, -1, 1, 2};
+	int eixoY[] = {1, 2, 2, 1, -1, -2, -2, -1};
+	// Inicializado com um valor acima do possível (8).
+	int minMovimentos = 9, valor = 0; 
+
+	for(int i = 0; i < 8; i++) {
+		int auxX = X + eixoX[i];
+		int auxY = Y + eixoY[i];
+		int aux = (auxX - 1) * sqrt(TABULEIRO) + auxY;
+		if (posicaoValida(auxX, auxY) && !visitadas[aux] && vizinhoValido(casa,aux)){
+			valor = aux;
+			break;
+		}
+	}
+	return valor;
+}
 
 INDIVIDUO fitness(INDIVIDUO copia){
 	INDIVIDUO adaptado = copia;
@@ -133,7 +154,8 @@ INDIVIDUO fitness(INDIVIDUO copia){
 			contador++;
 		}
 		else{
-			proximo = proximoMovimento(casa, visitadas);
+			//proximo = proximoMovimento(casa, visitadas);
+			proximo = regraWarnsdorff(casa, visitadas);
 			if(proximo == 0) 
 				break;
 
@@ -146,25 +168,6 @@ INDIVIDUO fitness(INDIVIDUO copia){
 	adaptado.fitness = contador;
 
 	return adaptado;
-}
-
-void inicializa(INDIVIDUO *populacao)
-{
-	for(int i = 0; i < POPULACAO; i++){
-		populacao[i].tour[0] = 1;
-		for(int j = 1; j < TABULEIRO; j++)
-			populacao[i].tour[j] = j+1;
-	}
-	
-	for(int i = 0; i < POPULACAO; i++){
-		for(int j = 1; j < TABULEIRO; j++){
-			int pos = (rand() % ((TABULEIRO-1) - 1 + 1)) + 1;
-			int temp = populacao[i].tour[j];
-			populacao[i].tour[j] = populacao[i].tour[pos];
-			populacao[i].tour[pos] = temp;
-		}
-		populacao[i] = fitness(populacao[i]);	
-	}
 }
 
 int vetorMovimentos(int casa) {
@@ -184,15 +187,62 @@ int vetorMovimentos(int casa) {
 			j++;
 		}
 	}
-
 	
 	int valor =	movimentos[gerarNumAleatorio(j)];
 
 	return valor;
 }
 
+void inicializa(INDIVIDUO * populacao){
+	for(int i = 0; i < POPULACAO; i++){
+		for(int j = 0; j < TABULEIRO; j++)
+			populacao[i].tour[j] = j;
+	}
+	
+	for(int i = 0; i < POPULACAO; i++){
+		for(int j = 0; j < TABULEIRO; j++){
+			int pos = gerarNumAleatorio(TABULEIRO);
+			int temp = populacao[i].tour[j];
+			populacao[i].tour[j] = populacao[i].tour[pos];
+			populacao[i].tour[pos] = temp;
+		}
+		populacao[i] = fitness(populacao[i]);	
+	}
+}
+
+void inicializaCentro(INDIVIDUO *populacao)
+{
+	int meio = 0, N = sqrt(TABULEIRO);
+	meio = (pow(N,2) + 1)/2;
+
+	for(int i = 0; i < POPULACAO; i++){
+		populacao[i].tour[0] = meio;
+		for(int j = 1; j < TABULEIRO; j++)
+			populacao[i].tour[j] = j;
+	}
+	
+	for(int i = 0; i < POPULACAO; i++){
+		for(int j = 1; j < TABULEIRO; j++){
+			int pos = (rand() % (TABULEIRO-1) + 1);
+			int temp = populacao[i].tour[j];
+			populacao[i].tour[j] = populacao[i].tour[pos];
+			populacao[i].tour[pos] = temp;
+		}
+		populacao[i] = fitness(populacao[i]);	
+	}
+}
 
 INDIVIDUO mutacao(INDIVIDUO filho){ 
+	INDIVIDUO individuo = filho;
+	
+	int r = gerarNumAleatorio(100);
+	if(r <= MUTACAO);
+		individuo.tour[gerarNumAleatorio(TABULEIRO)] = rand() % TABULEIRO + 1;
+
+	return individuo;
+}
+
+INDIVIDUO mutacaoVizinhos(INDIVIDUO filho){ 
 	INDIVIDUO individuo = filho;
 	
 	int r = gerarNumAleatorio(100);
@@ -204,6 +254,46 @@ INDIVIDUO mutacao(INDIVIDUO filho){
 		individuo.tour[aux+1] = vetorMovimentos(individuo.tour[aux]);
 	}
 	return individuo;
+}
+
+INDIVIDUO selecaoPorTorneio(INDIVIDUO *populacao){
+	INDIVIDUO melhor;
+	melhor.fitness = -1;
+
+	for(int i = 1; i < TORNEIO; i++){
+		INDIVIDUO aux = populacao[gerarNumAleatorio(POPULACAO-1)];
+		if(melhor.fitness == -1 || aux.fitness > melhor.fitness){
+			melhor = aux;
+		}
+	}
+
+	return melhor;
+}
+
+INDIVIDUO torneioDosDissimilares(INDIVIDUO *populacao, bool flag){
+	INDIVIDUO melhor;
+
+	if(flag){
+		melhor.fitness = -1;
+
+		for(int i = 1; i < TORNEIO; i++){
+			INDIVIDUO aux = populacao[gerarNumAleatorio(POPULACAO-1)];
+			if(melhor.fitness == -1 || aux.fitness > melhor.fitness){
+				melhor = aux;
+			}
+		}
+	}else{
+		melhor.fitness = TABULEIRO;
+
+		for(int i = 1; i < TORNEIO; i++){
+			INDIVIDUO aux = populacao[gerarNumAleatorio(POPULACAO-1)];
+			if(melhor.fitness == TABULEIRO || aux.fitness < melhor.fitness){
+				melhor = aux;
+			}
+		}
+	}
+
+	return melhor;
 }
 
 INDIVIDUO recombinacaoUniforme(INDIVIDUO pai, INDIVIDUO mae){
@@ -231,43 +321,33 @@ int elitismo(INDIVIDUO *populacao){
 	return selecionados;
 }
 
-INDIVIDUO selecaoPorTorneio(INDIVIDUO *populacao){
-	INDIVIDUO melhor;
-	melhor.fitness = -1;
-
-	for(int i = 1; i < TORNEIO; i++){
-		INDIVIDUO aux = populacao[gerarNumAleatorio(POPULACAO-1)];
-		if(melhor.fitness == -1 || aux.fitness > melhor.fitness){
-			melhor = aux;
-		}
-	}
-	return melhor;
-}
-
-INDIVIDUO reproducao(INDIVIDUO *populacao){
+INDIVIDUO reproducao(INDIVIDUO *populacao, int geracao){
 	INDIVIDUO *novaPopulacao, melhor, pai, mae, filho;
 	novaPopulacao = (INDIVIDUO *)malloc(POPULACAO * sizeof(INDIVIDUO));
 
 	int taxaDeElitismo = elitismo(populacao);
 	melhor = populacao[0];
 
-	for(int i = taxaDeElitismo; i < POPULACAO; i++){
+	for(int i = 0; i < POPULACAO-taxaDeElitismo; i++){
 		//pai = selecaoPorTorneio(populacao);
 		//mae = selecaoPorTorneio(populacao);
-		pai = populacao[i];
-		mae = populacao[POPULACAO-i];
+
+		pai = torneioDosDissimilares(populacao, true);
+		mae = torneioDosDissimilares(populacao, false);
 
 		filho = recombinacaoUniforme(pai, mae);
-		filho = mutacao(filho);	
+		//filho = mutacao(filho);
+		filho = mutacaoVizinhos(filho);
 		filho = fitness(filho);
 
-		if(filho.fitness > melhor.fitness) 
+		if(filho.fitness > melhor.fitness)
 			melhor = filho;
+
 		novaPopulacao[i] = filho;
 	}
 
-	for(int i = taxaDeElitismo; i < POPULACAO; i++)
-		populacao[i] = novaPopulacao[i];
+	for(int i = taxaDeElitismo, j = 0; i < POPULACAO; i++, j++)
+		populacao[i] = novaPopulacao[j];
 
 	free(novaPopulacao);
 	return melhor;
@@ -292,7 +372,7 @@ void verifica(INDIVIDUO copia){
 	}
 }
 
-int main(void)
+void AE()
 {
 	clock_t inicio, fim;
 	double total = 0;
@@ -303,21 +383,31 @@ int main(void)
 	int geracao = 0;
 
 	srand(time(NULL));
-	inicializa(populacao);
+	//inicializa(populacao);
+	inicializaCentro(populacao);
 
-	do{
-		melhor = reproducao(populacao);
+	for(geracao = 1; geracao <= GERACOES; geracao++){
+		melhor = reproducao(populacao, geracao);
 		printf("\nIteracao %d, melhor fitness %d.\n", geracao, melhor.fitness);
-		geracao++;
-		if(melhor.fitness == TABULEIRO-1) break;
-	}while(geracao <= GERACOES);
+		
+		if(melhor.fitness == TABULEIRO-1) 
+			break;
+	}
+
+	if(geracao > GERACOES) geracao-=1;
 
 	fim = clock();
 	total = (double)(fim-inicio)/CLOCKS_PER_SEC;
 	printf("Tempo total gasto pela CPU: %lf\n", total);
-	escreveRelatorio(total,melhor.fitness);
+	escreveRelatorio(total,melhor.fitness, geracao);
 	verifica(melhor);
 	free(populacao);
+}
+
+int main(void){
+
+	//for(int i = 0; i < 10; i++)
+		AE();
 	
 	return 0;
 }
