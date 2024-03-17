@@ -8,7 +8,9 @@ Esses algoritmos oferecem a vantagem de trabalharem com múltiplas soluções pa
 
 Neste trabalho de Conclusão de Curso, o Algoritmo Evolutivo será aplicado a um famoso problema combinatório denominado o Problema do Percurso do Cavalo -- PPC, em inglês ``Knight's Tour``, no tabuleiro de xadrez. Esse problema pode ser definido da seguinte forma:
 
-**Dado um tabuleiro $n$ $x$ $m$ qualquer, determine uma sequência legal de movimentos do cavalo de modo que esta peça passe por todas as casas uma única vez, a partir de qualquer casa do tabuleiro.**
+
+``Dado um tabuleiro $n$ $x$ $m$ qualquer, determine uma sequência legal de movimentos do cavalo de modo que esta peça passe por todas as casas uma única vez, a partir de qualquer casa do tabuleiro.``
+
 
 A implementação do Algoritmo Evolutivo foi baseada nos trabalhos encontrados na literatura, com a inicialização da população seguindo a implementação de (PINTO, 2013), a avaliação de (GORDON; SLOCUM, 2004) e (AL-GHARAIBEH; QAWAGNEH; ALZAHAWI, 2007), a seleção dos indivíduos pelo torneio, o cruzamento pela recombinação uniforme e a mutação 1-ponto. Em concordância com os objetivos propostos, os operadores torneio dos dissimilares, mutação dos vizinhos e inicialização central foram desenvolvidos, melhorando os resultados encontrados em um tabuleiro de dimensões 20x20.
 
